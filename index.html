@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vasca — registro allenamenti</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0A2F3A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Vasca">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --vasca:#0A2F3A; --fondo:#0E3D4B; --pannello:#134C5D; --bordo:#1E6478;
+  --tile:#EAF1F3; --tenue:#8FB3BE; --ombra:rgba(0,0,0,.28);
+  --en1:#4E9FC4; --tec:#93A6B0; --en2:#E0B23C; --en3:#DE7F3C; --sp:#D2494B;
+  --sl:#4E9FC4; --do:#7BC4A8; --ra:#E0B23C; --fa:#C77BC4; --mx:#8FB3BE;
+  --ok:#5FBF8F; --gap:#D2494B;
+  --f-disp:'Barlow Condensed', 'Oswald', system-ui, sans-serif;
+  --f-body:'Barlow', system-ui, -apple-system, sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--vasca); color:var(--tile); font-family:var(--f-body);
+  font-size:16px; line-height:1.45; -webkit-text-size-adjust:100%;
+  padding-bottom:calc(76px + env(safe-area-inset-bottom));
+}
+h1,h2,h3{font-family:var(--f-disp); font-weight:600; letter-spacing:.01em; margin:0}
+button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
+input,select,textarea{font-family:inherit; font-size:16px}
+:focus-visible{outline:2px solid #7FD3F0; outline-offset:2px}
+.num{font-family:var(--f-disp); font-variant-numeric:tabular-nums; font-weight:600}
+
+/* ---------- intestazione ---------- */
+.top{position:sticky; top:0; z-index:20; background:linear-gradient(var(--vasca) 72%, rgba(10,47,58,0));
+     padding:10px 14px 12px; padding-top:calc(10px + env(safe-area-inset-top))}
+.gruppi{display:flex; gap:6px}
+.gruppi button{flex:1; padding:9px 4px; border-radius:9px; border:1px solid var(--bordo);
+  background:transparent; color:var(--tenue); font-family:var(--f-disp); font-size:17px; font-weight:600}
+.gruppi button[aria-pressed="true"]{background:var(--tile); color:var(--vasca); border-color:var(--tile)}
+.avviso{margin-top:10px; padding:8px 11px; border-radius:8px; background:#4A2530; border:1px solid #7A3A46;
+  color:#F0C9CF; font-size:14px; line-height:1.35}
+
+/* ---------- struttura ---------- */
+main{padding:0 14px 24px; max-width:720px; margin:0 auto}
+.vista{display:none}
+.vista.attiva{display:block}
+.sez{margin-top:22px}
+.sez > h2{font-size:15px; font-weight:600; color:var(--tenue); letter-spacing:.06em; margin-bottom:9px}
+.pannello{background:var(--fondo); border:1px solid var(--bordo); border-radius:14px; padding:14px}
+
+/* ---------- corsia (hero) ---------- */
+.hero{background:var(--fondo); border:1px solid var(--bordo); border-radius:16px; padding:16px 16px 14px}
+.hero-testa{display:flex; justify-content:space-between; align-items:baseline; gap:10px}
+.hero-testa .sett{font-family:var(--f-disp); font-size:19px; font-weight:600}
+.hero .date{color:var(--tenue); font-size:14px; margin-top:2px}
+.frecce{display:flex; gap:4px; flex:none}
+.frecce button{width:38px; height:38px; border-radius:9px; border:1px solid var(--bordo);
+  background:transparent; color:var(--tile); font-family:var(--f-disp); font-size:20px; line-height:1}
+.cifra{display:flex; align-items:baseline; gap:8px; margin:10px 0 12px}
+.cifra .grande{font-size:52px; line-height:.9}
+.cifra .su{color:var(--tenue); font-size:20px}
+.corsia{position:relative; height:34px; border-radius:8px; background:#0A2531; overflow:hidden;
+  border:1px solid var(--bordo); display:flex}
+.corsia i{display:block; height:100%}
+.corsia i.prog{opacity:.42; background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.5) 0 3px,transparent 3px 7px)}
+.traguardo{position:absolute; top:-2px; bottom:-2px; width:2px; background:var(--tile)}
+.sotto{display:flex; justify-content:space-between; margin-top:9px; font-size:14.5px; color:var(--tenue)}
+.sotto b{color:var(--tile); font-family:var(--f-disp); font-size:17px; font-weight:600}
+
+/* ---------- barre e tabelle ---------- */
+.barra{height:12px; border-radius:6px; overflow:hidden; display:flex; background:#0A2531}
+.barra i{height:100%}
+.legenda{display:flex; flex-wrap:wrap; gap:10px 16px; margin-top:9px; font-size:14px; color:var(--tenue)}
+.legenda span{display:flex; align-items:center; gap:6px}
+.pallino{width:9px; height:9px; border-radius:3px; flex:none}
+table{width:100%; border-collapse:collapse; font-size:15px}
+th{text-align:right; font-weight:500; color:var(--tenue); font-size:13px; padding:0 0 6px}
+th:first-child{text-align:left}
+td{padding:6px 0; border-top:1px solid rgba(255,255,255,.08); text-align:right;
+  font-variant-numeric:tabular-nums}
+td:first-child{text-align:left; display:flex; align-items:center; gap:8px}
+.delta-neg{color:var(--gap)} .delta-ok{color:var(--ok)}
+
+/* ---------- giorni ---------- */
+.giorni{display:flex; gap:6px; align-items:flex-end; height:112px}
+.giorno{flex:1; display:flex; flex-direction:column; justify-content:flex-end; gap:5px; height:100%}
+.pila{display:flex; flex-direction:column-reverse; border-radius:5px; overflow:hidden; min-height:3px; background:#0A2531}
+.pila i{display:block}
+.giorno small{text-align:center; color:var(--tenue); font-size:12.5px; font-family:var(--f-disp)}
+.giorno.oggi small{color:var(--tile)}
+
+/* ---------- inserimento ---------- */
+.riga-campi{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:12px}
+label.campo{display:flex; flex-direction:column; gap:4px; font-size:13px; color:var(--tenue); flex:1; min-width:120px}
+input[type=date],input[type=text],textarea,select{
+  background:#0A2531; border:1px solid var(--bordo); color:var(--tile); border-radius:9px; padding:9px 10px; width:100%}
+textarea{min-height:132px; line-height:1.55; resize:vertical; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:14px}
+.gruppo-chip{margin:2px 0 12px}
+.etichetta{font-size:13px; color:var(--tenue); margin:12px 0 6px}
+.chips{display:flex; flex-wrap:wrap; gap:6px}
+.chip{padding:9px 13px; min-height:42px; border-radius:9px; border:1px solid var(--bordo);
+  background:#0A2531; color:var(--tile); font-family:var(--f-disp); font-size:17px; font-weight:600}
+.chip[aria-pressed="true"]{background:var(--tile); color:var(--vasca); border-color:var(--tile)}
+.chip.z[aria-pressed="true"]{color:#08222C}
+.chip.piccolo{font-family:var(--f-body); font-size:14.5px; font-weight:500; padding:8px 11px; min-height:38px}
+.anteprima{margin-top:14px; padding:12px 13px; border-radius:11px; background:#0A2531; border:1px dashed var(--bordo);
+  display:flex; justify-content:space-between; align-items:center; gap:10px}
+.anteprima .testo{font-family:var(--f-disp); font-size:20px; font-weight:600}
+.anteprima .metri{font-family:var(--f-disp); font-size:24px; font-weight:700}
+.azioni{display:flex; gap:8px; margin-top:12px}
+.primario{flex:1; padding:14px; border-radius:11px; border:none; background:var(--tile); color:var(--vasca);
+  font-family:var(--f-disp); font-size:19px; font-weight:700}
+.secondario{padding:14px 16px; border-radius:11px; border:1px solid var(--bordo); background:transparent; color:var(--tile);
+  font-family:var(--f-disp); font-size:17px; font-weight:600}
+.primario[disabled]{opacity:.4}
+.interruttore{display:flex; gap:0; border:1px solid var(--bordo); border-radius:10px; overflow:hidden; margin-bottom:14px}
+.interruttore button{flex:1; padding:10px; background:transparent; border:none; color:var(--tenue);
+  font-family:var(--f-disp); font-size:16px; font-weight:600}
+.interruttore button[aria-pressed="true"]{background:var(--pannello); color:var(--tile)}
+
+/* ---------- elenco serie ---------- */
+.serie{list-style:none; margin:0; padding:0}
+.serie li{display:flex; align-items:center; gap:10px; padding:10px 0; border-top:1px solid rgba(255,255,255,.08)}
+.serie li:first-child{border-top:none}
+.zbadge{width:4px; align-self:stretch; border-radius:3px; flex:none}
+.serie .desc{flex:1; min-width:0}
+.serie .desc b{font-family:var(--f-disp); font-size:18px; font-weight:600; display:block}
+.serie .desc small{color:var(--tenue); font-size:13px}
+.serie .mt{font-family:var(--f-disp); font-weight:600; font-size:17px; font-variant-numeric:tabular-nums}
+.icona{background:transparent; border:none; color:var(--tenue); padding:8px; line-height:1; font-size:18px; border-radius:8px}
+.icona:hover{color:var(--tile)}
+.vuoto{color:var(--tenue); font-size:15px; line-height:1.5}
+.serie li.blocco{display:flex; justify-content:space-between; align-items:baseline;
+  padding:16px 0 2px; font-family:var(--f-disp); font-size:14px; letter-spacing:.06em; color:var(--tenue)}
+.serie li.blocco:first-child{padding-top:2px}
+.serie li.lettura{border-top:none; padding:5px 0}
+.serie li.lettura .desc b{font-size:22px; line-height:1.2}
+.serie li.lettura .desc small{font-size:14.5px; color:var(--tenue)}
+.serie li.lettura .mt{font-size:18px; color:var(--tenue)}
+.testa-seduta{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:9px}
+.testa-seduta h2{font-size:15px; font-weight:600; color:var(--tenue); letter-spacing:.06em}
+.blocco-testa{display:flex; justify-content:space-between; align-items:baseline;
+  margin:16px 0 2px; padding-top:12px; border-top:1px solid rgba(255,255,255,.14);
+  font-family:var(--f-disp); font-size:14px; color:var(--tenue); letter-spacing:.05em}
+.serie li:first-child{border-top:none}
+.blocco-testa:first-child{margin-top:0; padding-top:0; border-top:none}
+.lettura li{padding:12px 0}
+.lettura .desc b{font-size:25px; line-height:1.15}
+.lettura .desc small{font-size:15px; color:#B6D2DA}
+.lettura .mt{font-size:20px}
+.totale-seduta{display:flex; justify-content:space-between; align-items:baseline; margin-top:12px;
+  padding-top:12px; border-top:2px solid var(--bordo)}
+.totale-seduta .n{font-family:var(--f-disp); font-size:30px; font-weight:700}
+
+/* ---------- stagione ---------- */
+.settimane{list-style:none; margin:0; padding:0}
+.settimane li{display:grid; grid-template-columns:30px 1fr 92px; gap:10px; align-items:center;
+  padding:7px 0; border-top:1px solid rgba(255,255,255,.07); font-size:14px}
+.settimane li.corrente{background:rgba(255,255,255,.05); border-radius:8px}
+.settimane .w{font-family:var(--f-disp); font-weight:600; color:var(--tenue); text-align:right}
+.settimane .val{text-align:right; font-variant-numeric:tabular-nums; color:var(--tenue); font-size:13.5px}
+.settimane .val b{color:var(--tile); font-family:var(--f-disp); font-size:15px}
+.mini{height:14px; border-radius:4px; background:#0A2531; position:relative; overflow:hidden}
+.mini .piano{position:absolute; inset:0 auto 0 0; background:rgba(255,255,255,.13)}
+.mini .fatto{position:absolute; inset:0 auto 0 0; display:flex}
+.mini .fatto i{height:100%}
+.meso-testa{margin:16px 0 4px; font-family:var(--f-disp); font-size:14px; color:var(--tenue)}
+
+/* ---------- navigazione ---------- */
+nav{position:fixed; left:0; right:0; bottom:0; z-index:30; display:flex;
+  background:#082630; border-top:1px solid var(--bordo);
+  padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1; padding:12px 4px 13px; background:transparent; border:none; color:var(--tenue);
+  font-family:var(--f-disp); font-size:15px; font-weight:600; letter-spacing:.02em}
+nav button[aria-pressed="true"]{color:var(--tile); box-shadow:inset 0 2px 0 var(--tile)}
+.nota{color:var(--tenue); font-size:13.5px; line-height:1.5; margin-top:10px}
+.pericolo{border-color:#7A3A46; color:#F0C9CF}
+@media (prefers-reduced-motion:no-preference){
+  .corsia i,.mini .fatto i{transition:width .28s ease}
+}
+@media (min-width:640px){
+  .cifra .grande{font-size:64px}
+  .giorni{height:132px}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="gruppi" id="gruppi"></div>
+  <div class="avviso" id="avviso" hidden></div>
+</header>
+
+<main>
+  <!-- ============ OGGI ============ -->
+  <section class="vista attiva" id="v-oggi">
+    <div class="sez">
+      <div class="riga-campi">
+        <label class="campo">Data
+          <input type="date" id="data">
+        </label>
+        <label class="campo" id="campo-stato">Stato
+          <select id="stato">
+            <option value="1">Svolto</option>
+            <option value="0">Programmato</option>
+          </select>
+        </label>
+      </div>
+
+      <div id="zona-inserimento">
+      <div class="interruttore" role="group">
+        <button id="modo-form" aria-pressed="true">Pulsanti</button>
+        <button id="modo-testo" aria-pressed="false">Testo</button>
+      </div>
+
+      <div class="pannello" id="form-serie">
+        <div class="etichetta">Ripetizioni</div>
+        <div class="chips" id="c-rip"></div>
+        <div class="etichetta">Distanza</div>
+        <div class="chips" id="c-dist"></div>
+        <div class="etichetta">Stile</div>
+        <div class="chips" id="c-stile"></div>
+        <div class="etichetta">Zona</div>
+        <div class="chips" id="c-zona"></div>
+        <div class="etichetta">Blocco</div>
+        <div class="chips" id="c-blocco"></div>
+        <div class="etichetta">Attrezzo e mezzo (opzionale)</div>
+        <div class="chips" id="c-attr"></div>
+        <div class="riga-campi" style="margin-top:14px">
+          <label class="campo">Partenza
+            <input type="text" id="partenza" placeholder="2'36&quot;" inputmode="text">
+          </label>
+          <label class="campo">Nota
+            <input type="text" id="nota" placeholder="focus catch">
+          </label>
+        </div>
+        <div class="anteprima">
+          <span class="testo" id="prev-testo">—</span>
+          <span class="metri" id="prev-metri">0 m</span>
+        </div>
+        <div class="azioni">
+          <button class="primario" id="aggiungi" disabled>Aggiungi serie</button>
+          <button class="secondario" id="pulisci">Pulisci</button>
+        </div>
+      </div>
+
+      <div class="pannello" id="form-testo" hidden>
+        <div class="etichetta">Una serie per riga — <code>8x200 sl en2 p2:36</code></div>
+        <textarea id="testo" spellcheck="false" placeholder="wu 1x400 sl en1
+tec 6x100 sl scull p2:00
+pre 4x100 sl en1 build
+main 12x200 sl en2 p2:36
+comp 8x100 sl en1 gambe
+comp 4x100 sl en1 pull paracadute
+def 1x300 mx en1"></textarea>
+        <div class="anteprima">
+          <span class="testo" id="prevt-testo">—</span>
+          <span class="metri" id="prevt-metri">0 m</span>
+        </div>
+        <div class="azioni">
+          <button class="primario" id="aggiungi-testo" disabled>Aggiungi le serie</button>
+        </div>
+        <p class="nota">Riconosce stile (sl do ra fa mx), zona (en1 tec en2 en3 sp), blocco (wu tec pre main comp def),
+          attrezzi (gambe pull palette pinne snorkel paracadute tavola elastico scull drill build) e partenza (p2:36).
+          Il resto della riga finisce nelle note.</p>
+      </div>
+      </div>
+    </div>
+
+    <div class="sez">
+      <div class="testa-seduta">
+        <h2 id="titolo-seduta" style="margin:0">Seduta</h2>
+        <span class="frecce">
+          <button id="g-prec" aria-label="Giorno precedente">‹</button>
+          <button id="g-succ" aria-label="Giorno successivo">›</button>
+        </span>
+      </div>
+      <div class="pannello">
+        <ul class="serie" id="elenco-serie"></ul>
+        <div class="totale-seduta">
+          <span style="color:var(--tenue); font-size:14px" id="riepilogo-seduta">nessuna serie</span>
+          <span class="n" id="totale-seduta">0 m</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SETTIMANA ============ -->
+  <section class="vista" id="v-settimana">
+    <div class="sez">
+      <div class="hero">
+        <div class="hero-testa">
+          <span class="sett" id="w-titolo">—</span>
+          <span class="frecce">
+            <button id="w-prec" aria-label="Settimana precedente">‹</button>
+            <button id="w-succ" aria-label="Settimana successiva">›</button>
+            <button id="w-agg" aria-label="Aggiorna dal foglio" hidden>↻</button>
+          </span>
+        </div>
+        <div class="date" id="w-date"></div>
+        <div class="cifra">
+          <span class="grande num" id="w-fatti">0</span>
+          <span class="su num" id="w-target">/ 0 m</span>
+        </div>
+        <div class="corsia" id="w-corsia"><div class="traguardo" style="left:100%"></div></div>
+        <div class="sotto">
+          <span id="w-manca">—</span>
+          <span id="w-ritmo"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sez">
+      <h2>Metri per giorno</h2>
+      <div class="pannello">
+        <div class="giorni" id="w-giorni"></div>
+      </div>
+    </div>
+
+    <div class="sez">
+      <h2>Zone rispetto al piano</h2>
+      <div class="pannello">
+        <table>
+          <thead><tr><th>Zona</th><th>Fatto</th><th>Piano</th><th>Manca</th><th>%</th></tr></thead>
+          <tbody id="w-zone"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="sez">
+      <h2>Stili nuotati</h2>
+      <div class="pannello">
+        <div class="barra" id="w-stili-barra"></div>
+        <div class="legenda" id="w-stili-legenda"></div>
+        <p class="nota" id="w-stili-nota"></p>
+      </div>
+    </div>
+
+    <div class="sez">
+      <h2>Carico</h2>
+      <div class="pannello">
+        <table>
+          <tbody id="w-carico"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ STAGIONE ============ -->
+  <section class="vista" id="v-stagione">
+    <div class="sez">
+      <div class="pannello">
+        <table>
+          <tbody id="s-riepilogo"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="sez">
+      <h2>Distribuzione stagionale</h2>
+      <div class="pannello">
+        <div class="barra" id="s-zone-barra"></div>
+        <div class="legenda" id="s-zone-legenda"></div>
+      </div>
+    </div>
+    <div class="sez">
+      <h2>49 settimane</h2>
+      <div class="pannello">
+        <ul class="settimane" id="s-settimane"></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ DATI ============ -->
+  <section class="vista" id="v-dati">
+    <div class="sez">
+      <h2>Foglio Google</h2>
+      <div class="pannello">
+        <p class="nota" style="margin-top:0" id="d-sync">—</p>
+        <label class="campo" style="margin-bottom:10px">Indirizzo dell'app web
+          <input type="text" id="sync-url" placeholder="https://script.google.com/macros/s/.../exec"
+                 inputmode="url" autocapitalize="off" spellcheck="false">
+        </label>
+        <label class="campo">Parola d'ordine
+          <input type="text" id="sync-token" placeholder="la stessa scritta nello script"
+                 autocapitalize="off" spellcheck="false">
+        </label>
+        <div class="azioni">
+          <button class="primario" id="sync-ora">Sincronizza</button>
+          <button class="secondario" id="sync-salva">Salva indirizzo</button>
+        </div>
+        <div class="etichetta">Ruolo di questo dispositivo</div>
+        <div class="chips" id="c-ruolo"></div>
+        <p class="nota">La sincronizzazione unisce: le serie aggiunte dagli altri dispositivi arrivano,
+          le tue partono, quelle cancellate restano cancellate ovunque. Le correzioni si fanno qui nell'app —
+          il foglio è la copia da leggere e pivotare, non il posto dove modificare.</p>
+      </div>
+    </div>
+
+    <div class="sez">
+      <h2>Salvataggio</h2>
+      <div class="pannello">
+        <p class="nota" id="d-stato" style="margin-top:0"></p>
+        <div class="azioni" style="flex-wrap:wrap">
+          <button class="secondario" id="exp-csv">Esporta CSV</button>
+          <button class="secondario" id="exp-json">Esporta backup</button>
+          <button class="secondario" id="imp-json">Importa backup</button>
+        </div>
+        <input type="file" id="file-json" accept=".json,application/json" hidden>
+        <p class="nota">Il backup contiene serie e piano di tutti i gruppi. Importandolo su un altro dispositivo
+          ritrovi tutto: è anche il modo per passare da telefono a computer.</p>
+      </div>
+    </div>
+
+    <div class="sez" id="sez-piano">
+      <h2>Piano settimanale</h2>
+      <div class="pannello">
+        <p class="nota" style="margin-top:0" id="d-piano"></p>
+        <div class="etichetta">Incolla una tabella §5.2 per sostituire il piano del gruppo selezionato</div>
+        <textarea id="piano-testo" spellcheck="false" placeholder="| 1 | 2/9–5/9/26 | Blocco Comune | 16.000 | 11.200 | 3.200 | 1.300 | 300 | 0 | | |"></textarea>
+        <div class="azioni">
+          <button class="primario" id="imp-piano">Sostituisci il piano</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sez" id="sez-azzera">
+      <h2>Azzera</h2>
+      <div class="pannello">
+        <div class="azioni">
+          <button class="secondario pericolo" id="canc-gruppo">Cancella le serie del gruppo</button>
+          <button class="secondario pericolo" id="canc-tutto">Cancella tutto</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<nav id="nav">
+  <button data-vista="v-oggi" aria-pressed="true">Seduta</button>
+  <button data-vista="v-settimana" aria-pressed="false">Settimana</button>
+  <button data-vista="v-stagione" aria-pressed="false">Stagione</button>
+  <button data-vista="v-dati" aria-pressed="false">Dati</button>
+</nav>
+
+<script>
+"use strict";
+
+/* ============ dati di partenza: piano 2026/27 dei tre gruppi ============ */
+const PIANO_SEED = [{"g":"cadetti","w":1,"i":"2026-09-02","f":"2026-09-05","m":"Blocco Comune","t":16000,"e1":11200,"tc":3200,"e2":1300,"e3":300,"sp":0,"ga":""},{"g":"cadetti","w":2,"i":"2026-09-07","f":"2026-09-12","m":"Blocco Comune","t":27000,"e1":16750,"tc":4300,"e2":4300,"e3":1100,"sp":550,"ga":""},{"g":"cadetti","w":3,"i":"2026-09-14","f":"2026-09-19","m":"Blocco Comune","t":29000,"e1":16850,"tc":4050,"e2":5200,"e3":2050,"sp":850,"ga":"Test Vcrit comune (SL+DO)"},{"g":"cadetti","w":4,"i":"2026-09-21","f":"2026-09-27","m":"Prep. Generale 1","t":22000,"e1":13200,"tc":3300,"e2":3960,"e3":1100,"sp":440,"ga":""},{"g":"cadetti","w":5,"i":"2026-09-28","f":"2026-10-04","m":"Prep. Generale 1","t":30000,"e1":18000,"tc":4500,"e2":5400,"e3":1500,"sp":600,"ga":""},{"g":"cadetti","w":6,"i":"2026-10-05","f":"2026-10-11","m":"Prep. Generale 1","t":32000,"e1":19200,"tc":4800,"e2":5760,"e3":1600,"sp":640,"ga":""},{"g":"cadetti","w":7,"i":"2026-10-12","f":"2026-10-18","m":"Prep. Generale 1","t":33000,"e1":19800,"tc":4950,"e2":5940,"e3":1650,"sp":660,"ga":""},{"g":"cadetti","w":8,"i":"2026-10-19","f":"2026-10-25","m":"Prep. Generale 1","t":25000,"e1":15000,"tc":3750,"e2":4500,"e3":1250,"sp":500,"ga":""},{"g":"cadetti","w":9,"i":"2026-10-26","f":"2026-11-01","m":"Prep. Generale 1","t":30000,"e1":17400,"tc":3900,"e2":5100,"e3":2100,"sp":1500,"ga":"52° Nico Sapio (C)"},{"g":"cadetti","w":10,"i":"2026-11-02","f":"2026-11-08","m":"Prep. Specifica 1","t":32000,"e1":17600,"tc":3840,"e2":6400,"e3":2560,"sp":1600,"ga":"Coppa LA I (C)"},{"g":"cadetti","w":11,"i":"2026-11-09","f":"2026-11-15","m":"Prep. Specifica 1","t":34000,"e1":18700,"tc":4080,"e2":6800,"e3":2720,"sp":1700,"ga":""},{"g":"cadetti","w":12,"i":"2026-11-16","f":"2026-11-22","m":"Prep. Specifica 1","t":36000,"e1":19800,"tc":4320,"e2":7200,"e3":2880,"sp":1800,"ga":""},{"g":"cadetti","w":13,"i":"2026-11-23","f":"2026-11-29","m":"Prep. Specifica 1","t":28000,"e1":16240,"tc":3360,"e2":4760,"e3":2240,"sp":1400,"ga":"Coppa LA II (C)"},{"g":"cadetti","w":14,"i":"2026-11-30","f":"2026-12-06","m":"Prep. Specifica 1","t":35000,"e1":19250,"tc":4200,"e2":7000,"e3":2800,"sp":1750,"ga":""},{"g":"cadetti","w":15,"i":"2026-12-07","f":"2026-12-13","m":"Prep. Specifica 1","t":30000,"e1":16500,"tc":3300,"e2":5400,"e3":2700,"sp":2100,"ga":""},{"g":"cadetti","w":16,"i":"2026-12-14","f":"2026-12-20","m":"Prep. Specifica 1","t":23000,"e1":12650,"tc":2300,"e2":3450,"e3":2300,"sp":2300,"ga":"Coppa Caduti Brema (B)"},{"g":"cadetti","w":17,"i":"2026-12-21","f":"2026-12-27","m":"Transizione/Holiday","t":18000,"e1":10800,"tc":2340,"e2":3240,"e3":1080,"sp":540,"ga":""},{"g":"cadetti","w":18,"i":"2026-12-28","f":"2027-01-03","m":"Transizione/Holiday","t":20000,"e1":12000,"tc":2600,"e2":3600,"e3":1200,"sp":600,"ga":""},{"g":"cadetti","w":19,"i":"2027-01-04","f":"2027-01-10","m":"Prep. Specifica 2","t":28000,"e1":16800,"tc":3640,"e2":5040,"e3":1680,"sp":840,"ga":""},{"g":"cadetti","w":20,"i":"2027-01-11","f":"2027-01-17","m":"Prep. Specifica 2","t":32000,"e1":19200,"tc":4160,"e2":5760,"e3":1920,"sp":960,"ga":""},{"g":"cadetti","w":21,"i":"2027-01-18","f":"2027-01-24","m":"Prep. Specifica 2","t":30000,"e1":17400,"tc":3900,"e2":5100,"e3":2100,"sp":1500,"ga":"Coppa LA III (C)"},{"g":"cadetti","w":22,"i":"2027-01-25","f":"2027-01-31","m":"Prep. Specifica 2","t":33000,"e1":19800,"tc":4290,"e2":5940,"e3":1980,"sp":990,"ga":""},{"g":"cadetti","w":23,"i":"2027-02-01","f":"2027-02-07","m":"Pre-Gara B","t":34000,"e1":18700,"tc":4080,"e2":6800,"e3":2720,"sp":1700,"ga":""},{"g":"cadetti","w":24,"i":"2027-02-08","f":"2027-02-14","m":"Pre-Gara B","t":22000,"e1":12100,"tc":2200,"e2":3300,"e3":2200,"sp":2200,"ga":"Trofeo Albanese (B)"},{"g":"cadetti","w":25,"i":"2027-02-15","f":"2027-02-21","m":"Prep. Specifica 3","t":28000,"e1":16800,"tc":3640,"e2":5040,"e3":1680,"sp":840,"ga":""},{"g":"cadetti","w":26,"i":"2027-02-22","f":"2027-02-28","m":"Prep. Specifica 3","t":33000,"e1":18150,"tc":3960,"e2":6600,"e3":2640,"sp":1650,"ga":""},{"g":"cadetti","w":27,"i":"2027-03-01","f":"2027-03-07","m":"Taper esteso Ob.1","t":26000,"e1":14300,"tc":2600,"e2":4680,"e3":2600,"sp":1820,"ga":"Reg. Categoria inizia 6/3 (A)"},{"g":"cadetti","w":28,"i":"2027-03-08","f":"2027-03-14","m":"Taper esteso Ob.1","t":20000,"e1":11000,"tc":1600,"e2":2400,"e3":2000,"sp":3000,"ga":"Camp. Reg. di Categoria (A)"},{"g":"cadetti","w":29,"i":"2027-03-15","f":"2027-03-21","m":"Taper esteso Ob.1","t":24000,"e1":13920,"tc":2400,"e2":3600,"e3":2400,"sp":1680,"ga":""},{"g":"cadetti","w":30,"i":"2027-03-22","f":"2027-03-28","m":"Taper esteso Ob.1","t":18000,"e1":9900,"tc":1440,"e2":1800,"e3":2160,"sp":2700,"ga":""},{"g":"cadetti","w":31,"i":"2027-03-29","f":"2027-04-04","m":"Taper esteso Ob.1","t":14000,"e1":7000,"tc":700,"e2":1120,"e3":1680,"sp":3500,"ga":"OBIETTIVO 1: Assoluti Primaverili LC (A)"},{"g":"cadetti","w":32,"i":"2027-04-05","f":"2027-04-11","m":"Transizione 2","t":12000,"e1":9000,"tc":1800,"e2":960,"e3":240,"sp":0,"ga":""},{"g":"cadetti","w":33,"i":"2027-04-12","f":"2027-04-18","m":"Transizione 2","t":22000,"e1":13200,"tc":3300,"e2":3300,"e3":1540,"sp":660,"ga":"Test Vcrit ricalibrazione LC"},{"g":"cadetti","w":34,"i":"2027-04-19","f":"2027-04-25","m":"Transizione 2","t":28000,"e1":16240,"tc":3640,"e2":5040,"e3":1960,"sp":1120,"ga":"Coppa LA Summer 1 (C)"},{"g":"cadetti","w":35,"i":"2027-04-26","f":"2027-05-02","m":"Prep. Specifica LC","t":31000,"e1":17050,"tc":3720,"e2":6200,"e3":2480,"sp":1550,"ga":""},{"g":"cadetti","w":36,"i":"2027-05-03","f":"2027-05-09","m":"Prep. Specifica LC","t":33000,"e1":18150,"tc":3960,"e2":6600,"e3":2640,"sp":1650,"ga":""},{"g":"cadetti","w":37,"i":"2027-05-10","f":"2027-05-16","m":"Prep. Specifica LC","t":23000,"e1":13340,"tc":2760,"e2":3450,"e3":1840,"sp":1610,"ga":"Trofeo Sisport (C)"},{"g":"cadetti","w":38,"i":"2027-05-17","f":"2027-05-23","m":"Prep. Specifica LC","t":35000,"e1":19250,"tc":4200,"e2":7000,"e3":2800,"sp":1750,"ga":""},{"g":"cadetti","w":39,"i":"2027-05-24","f":"2027-05-30","m":"Prep. Specifica LC","t":29000,"e1":16530,"tc":3480,"e2":4640,"e3":2320,"sp":2030,"ga":"Coppa LA Summer 2 (C)"},{"g":"cadetti","w":40,"i":"2027-05-31","f":"2027-06-06","m":"Prep. Specifica LC","t":34000,"e1":18700,"tc":4080,"e2":6800,"e3":2720,"sp":1700,"ga":""},{"g":"cadetti","w":41,"i":"2027-06-07","f":"2027-06-13","m":"Prep. alla Gara 2","t":24000,"e1":13200,"tc":2400,"e2":4080,"e3":2400,"sp":1920,"ga":"Camp. Reg. Assoluto (C)"},{"g":"cadetti","w":42,"i":"2027-06-14","f":"2027-06-20","m":"Prep. alla Gara 2","t":33000,"e1":17160,"tc":3300,"e2":6600,"e3":3300,"sp":2640,"ga":""},{"g":"cadetti","w":43,"i":"2027-06-21","f":"2027-06-27","m":"Prep. alla Gara 2","t":30000,"e1":16500,"tc":3000,"e2":5100,"e3":3000,"sp":2400,"ga":""},{"g":"cadetti","w":44,"i":"2027-06-28","f":"2027-07-04","m":"Prep. alla Gara 2","t":34000,"e1":17000,"tc":3400,"e2":6120,"e3":4080,"sp":3400,"ga":""},{"g":"cadetti","w":45,"i":"2027-07-05","f":"2027-07-11","m":"Taper esteso Ob.2","t":27000,"e1":14850,"tc":2700,"e2":4860,"e3":2700,"sp":1890,"ga":""},{"g":"cadetti","w":46,"i":"2027-07-12","f":"2027-07-18","m":"Taper esteso Ob.2","t":21000,"e1":11550,"tc":1680,"e2":2520,"e3":2100,"sp":3150,"ga":"Reg. Categoria JU-CA-SE (A)"},{"g":"cadetti","w":47,"i":"2027-07-19","f":"2027-07-25","m":"Taper esteso Ob.2","t":24000,"e1":13920,"tc":2400,"e2":3600,"e3":2400,"sp":1680,"ga":""},{"g":"cadetti","w":48,"i":"2027-07-26","f":"2027-08-01","m":"Taper esteso Ob.2","t":17000,"e1":9350,"tc":1360,"e2":1700,"e3":2040,"sp":2550,"ga":""},{"g":"cadetti","w":49,"i":"2027-08-02","f":"2027-08-08","m":"Taper esteso Ob.2","t":13000,"e1":6500,"tc":650,"e2":1040,"e3":1560,"sp":3250,"ga":"OBIETTIVO 2: Categoria Estivi (A)"},{"g":"ragazzi","w":1,"i":"2026-09-02","f":"2026-09-05","m":"Blocco Comune","t":12000,"e1":8400,"tc":2400,"e2":950,"e3":250,"sp":0,"ga":""},{"g":"ragazzi","w":2,"i":"2026-09-07","f":"2026-09-12","m":"Blocco Comune","t":20500,"e1":12700,"tc":3300,"e2":3300,"e3":800,"sp":400,"ga":""},{"g":"ragazzi","w":3,"i":"2026-09-14","f":"2026-09-19","m":"Blocco Comune","t":22500,"e1":13000,"tc":3150,"e2":4050,"e3":1600,"sp":700,"ga":"Test Vcrit comune (multi-stile)"},{"g":"ragazzi","w":4,"i":"2026-09-21","f":"2026-09-27","m":"Prep. Generale 1","t":17000,"e1":10200,"tc":2550,"e2":2890,"e3":1020,"sp":340,"ga":""},{"g":"ragazzi","w":5,"i":"2026-09-28","f":"2026-10-04","m":"Prep. Generale 1","t":23000,"e1":13800,"tc":3450,"e2":3910,"e3":1380,"sp":460,"ga":""},{"g":"ragazzi","w":6,"i":"2026-10-05","f":"2026-10-11","m":"Prep. Generale 1","t":25500,"e1":15300,"tc":3825,"e2":4335,"e3":1530,"sp":510,"ga":""},{"g":"ragazzi","w":7,"i":"2026-10-12","f":"2026-10-18","m":"Prep. Generale 1","t":27000,"e1":16200,"tc":4050,"e2":4590,"e3":1620,"sp":540,"ga":""},{"g":"ragazzi","w":8,"i":"2026-10-19","f":"2026-10-25","m":"Prep. Generale 1","t":20000,"e1":12000,"tc":3000,"e2":3400,"e3":1200,"sp":400,"ga":""},{"g":"ragazzi","w":9,"i":"2026-10-26","f":"2026-11-01","m":"Prep. Generale 1","t":24000,"e1":14400,"tc":3600,"e2":4080,"e3":1440,"sp":480,"ga":"52° Nico Sapio (C)"},{"g":"ragazzi","w":10,"i":"2026-11-02","f":"2026-11-08","m":"Prep. Specifica 1","t":27000,"e1":14850,"tc":3240,"e2":5130,"e3":2430,"sp":1350,"ga":"Coppa LA I (C)"},{"g":"ragazzi","w":11,"i":"2026-11-09","f":"2026-11-15","m":"Prep. Specifica 1","t":29000,"e1":15950,"tc":3480,"e2":5510,"e3":2610,"sp":1450,"ga":""},{"g":"ragazzi","w":12,"i":"2026-11-16","f":"2026-11-22","m":"Prep. Specifica 1","t":30500,"e1":16775,"tc":3660,"e2":5795,"e3":2745,"sp":1525,"ga":""},{"g":"ragazzi","w":13,"i":"2026-11-23","f":"2026-11-29","m":"Prep. Specifica 1","t":22500,"e1":12375,"tc":2700,"e2":4275,"e3":2025,"sp":1125,"ga":"Coppa LA II (C)"},{"g":"ragazzi","w":14,"i":"2026-11-30","f":"2026-12-06","m":"Prep. Specifica 1","t":28000,"e1":15400,"tc":3360,"e2":5320,"e3":2520,"sp":1400,"ga":""},{"g":"ragazzi","w":15,"i":"2026-12-07","f":"2026-12-13","m":"Prep. Specifica 1","t":24000,"e1":13200,"tc":2880,"e2":4560,"e3":2160,"sp":1200,"ga":""},{"g":"ragazzi","w":16,"i":"2026-12-14","f":"2026-12-20","m":"Prep. Specifica 1","t":18000,"e1":9900,"tc":2160,"e2":3420,"e3":1620,"sp":900,"ga":"Coppa Caduti Brema (B)"},{"g":"ragazzi","w":17,"i":"2026-12-21","f":"2026-12-27","m":"Transizione/Holiday","t":14000,"e1":8400,"tc":1820,"e2":2520,"e3":840,"sp":420,"ga":""},{"g":"ragazzi","w":18,"i":"2026-12-28","f":"2027-01-03","m":"Transizione/Holiday","t":15500,"e1":9300,"tc":2015,"e2":2790,"e3":930,"sp":465,"ga":""},{"g":"ragazzi","w":19,"i":"2027-01-04","f":"2027-01-10","m":"Prep. Specifica 2","t":22000,"e1":13200,"tc":2860,"e2":3960,"e3":1320,"sp":660,"ga":""},{"g":"ragazzi","w":20,"i":"2027-01-11","f":"2027-01-17","m":"Prep. Specifica 2","t":25500,"e1":15300,"tc":3315,"e2":4590,"e3":1530,"sp":765,"ga":""},{"g":"ragazzi","w":21,"i":"2027-01-18","f":"2027-01-24","m":"Prep. Specifica 2","t":24000,"e1":14400,"tc":3120,"e2":4320,"e3":1440,"sp":720,"ga":"Coppa LA III (C)"},{"g":"ragazzi","w":22,"i":"2027-01-25","f":"2027-01-31","m":"Prep. Specifica 2","t":27000,"e1":16200,"tc":3510,"e2":4860,"e3":1620,"sp":810,"ga":""},{"g":"ragazzi","w":23,"i":"2027-02-01","f":"2027-02-07","m":"Pre-Gara B","t":28500,"e1":15675,"tc":3420,"e2":5700,"e3":2280,"sp":1425,"ga":""},{"g":"ragazzi","w":24,"i":"2027-02-08","f":"2027-02-14","m":"Pre-Gara B","t":18500,"e1":10175,"tc":1850,"e2":2775,"e3":1850,"sp":1850,"ga":"Trofeo Fulvio Albanese (B)"},{"g":"ragazzi","w":25,"i":"2027-02-15","f":"2027-02-21","m":"Prep. Specifica 3","t":22500,"e1":13050,"tc":2700,"e2":4275,"e3":1575,"sp":900,"ga":""},{"g":"ragazzi","w":26,"i":"2027-02-22","f":"2027-02-28","m":"Prep. Specifica 3","t":27000,"e1":15660,"tc":3240,"e2":5130,"e3":1890,"sp":1080,"ga":""},{"g":"ragazzi","w":27,"i":"2027-03-01","f":"2027-03-07","m":"Taper esteso Ob.1","t":23000,"e1":12650,"tc":1840,"e2":4140,"e3":2300,"sp":2070,"ga":""},{"g":"ragazzi","w":28,"i":"2027-03-08","f":"2027-03-14","m":"Taper esteso Ob.1","t":17500,"e1":8750,"tc":875,"e2":2100,"e3":1400,"sp":4375,"ga":"Camp. Reg. di Categoria (A)"},{"g":"ragazzi","w":29,"i":"2027-03-15","f":"2027-03-21","m":"Taper esteso Ob.1","t":21000,"e1":12180,"tc":2100,"e2":3360,"e3":2100,"sp":1260,"ga":""},{"g":"ragazzi","w":30,"i":"2027-03-22","f":"2027-03-28","m":"Taper esteso Ob.1","t":12500,"e1":5625,"tc":500,"e2":1000,"e3":1625,"sp":3750,"ga":"OBIETTIVO 1: Criteria Nazionali Giovanili SC (A)"},{"g":"ragazzi","w":31,"i":"2027-03-29","f":"2027-04-04","m":"Transizione 2","t":9500,"e1":7125,"tc":1140,"e2":950,"e3":285,"sp":0,"ga":""},{"g":"ragazzi","w":32,"i":"2027-04-05","f":"2027-04-11","m":"Transizione 2","t":17000,"e1":10200,"tc":2380,"e2":2380,"e3":1360,"sp":680,"ga":"Test Vcrit ricalibrazione LC"},{"g":"ragazzi","w":33,"i":"2027-04-12","f":"2027-04-18","m":"Transizione 2","t":23000,"e1":13110,"tc":2990,"e2":4140,"e3":1840,"sp":920,"ga":""},{"g":"ragazzi","w":34,"i":"2027-04-19","f":"2027-04-25","m":"Transizione 2","t":26500,"e1":14575,"tc":3445,"e2":5035,"e3":2120,"sp":1325,"ga":"Coppa LA Summer 1 (C)"},{"g":"ragazzi","w":35,"i":"2027-04-26","f":"2027-05-02","m":"Prep. Specifica LC","t":27000,"e1":14850,"tc":3240,"e2":5130,"e3":2430,"sp":1350,"ga":""},{"g":"ragazzi","w":36,"i":"2027-05-03","f":"2027-05-09","m":"Prep. Specifica LC","t":29000,"e1":15950,"tc":3480,"e2":5510,"e3":2610,"sp":1450,"ga":""},{"g":"ragazzi","w":37,"i":"2027-05-10","f":"2027-05-16","m":"Prep. Specifica LC","t":24000,"e1":13200,"tc":2880,"e2":4560,"e3":2160,"sp":1200,"ga":"Trofeo Sisport (C)"},{"g":"ragazzi","w":38,"i":"2027-05-17","f":"2027-05-23","m":"Prep. Specifica LC","t":30500,"e1":16775,"tc":3660,"e2":5795,"e3":2745,"sp":1525,"ga":""},{"g":"ragazzi","w":39,"i":"2027-05-24","f":"2027-05-30","m":"Prep. Specifica LC","t":26500,"e1":14575,"tc":3180,"e2":5035,"e3":2385,"sp":1325,"ga":"Coppa LA Summer 2 (C)"},{"g":"ragazzi","w":40,"i":"2027-05-31","f":"2027-06-06","m":"Prep. Specifica LC","t":31500,"e1":17325,"tc":3780,"e2":5985,"e3":2835,"sp":1575,"ga":""},{"g":"ragazzi","w":41,"i":"2027-06-07","f":"2027-06-13","m":"Prep. alla Gara 2","t":23500,"e1":12220,"tc":2350,"e2":4465,"e3":2585,"sp":1880,"ga":"Camp. Reg. Assoluto (C)"},{"g":"ragazzi","w":42,"i":"2027-06-14","f":"2027-06-20","m":"Prep. alla Gara 2","t":29500,"e1":15340,"tc":2950,"e2":5605,"e3":3245,"sp":2360,"ga":""},{"g":"ragazzi","w":43,"i":"2027-06-21","f":"2027-06-27","m":"Prep. alla Gara 2","t":30000,"e1":15600,"tc":3000,"e2":5700,"e3":3300,"sp":2400,"ga":""},{"g":"ragazzi","w":44,"i":"2027-06-28","f":"2027-07-04","m":"Taper esteso Ob.2","t":24500,"e1":13475,"tc":1960,"e2":4165,"e3":2695,"sp":2205,"ga":""},{"g":"ragazzi","w":45,"i":"2027-07-05","f":"2027-07-11","m":"Taper esteso Ob.2","t":18500,"e1":9250,"tc":925,"e2":2220,"e3":1480,"sp":4625,"ga":"Camp. Reg. di Categoria Ragazzi (A)"},{"g":"ragazzi","w":46,"i":"2027-07-12","f":"2027-07-18","m":"Taper esteso Ob.2","t":22000,"e1":12760,"tc":2200,"e2":3520,"e3":2200,"sp":1320,"ga":""},{"g":"ragazzi","w":47,"i":"2027-07-19","f":"2027-07-25","m":"Taper esteso Ob.2","t":19000,"e1":9880,"tc":1140,"e2":2280,"e3":2280,"sp":3420,"ga":""},{"g":"ragazzi","w":48,"i":"2027-07-26","f":"2027-08-01","m":"Taper esteso Ob.2","t":15500,"e1":7440,"tc":775,"e2":1550,"e3":1860,"sp":3875,"ga":""},{"g":"ragazzi","w":49,"i":"2027-08-02","f":"2027-08-08","m":"Taper esteso Ob.2","t":11500,"e1":4945,"tc":460,"e2":805,"e3":1495,"sp":3795,"ga":"OBIETTIVO 2: Categoria Estivi (A)"},{"g":"junfondo","w":1,"i":"2026-09-02","f":"2026-09-05","m":"Blocco Comune","t":17500,"e1":12250,"tc":3500,"e2":1400,"e3":350,"sp":0,"ga":""},{"g":"junfondo","w":2,"i":"2026-09-07","f":"2026-09-12","m":"Blocco Comune","t":29000,"e1":17950,"tc":4650,"e2":4650,"e3":1150,"sp":600,"ga":""},{"g":"junfondo","w":3,"i":"2026-09-14","f":"2026-09-19","m":"Blocco Comune","t":31000,"e1":17950,"tc":4350,"e2":5600,"e3":2150,"sp":950,"ga":"Test Vcrit comune (SL)"},{"g":"junfondo","w":4,"i":"2026-09-21","f":"2026-09-27","m":"Prep. Generale 1","t":23000,"e1":13350,"tc":3200,"e2":4150,"e3":1600,"sp":700,"ga":""},{"g":"junfondo","w":5,"i":"2026-09-28","f":"2026-10-04","m":"Prep. Generale 1","t":32000,"e1":18550,"tc":4500,"e2":5750,"e3":2250,"sp":950,"ga":""},{"g":"junfondo","w":6,"i":"2026-10-05","f":"2026-10-11","m":"Prep. Generale 1","t":34000,"e1":19750,"tc":4750,"e2":6100,"e3":2400,"sp":1000,"ga":""},{"g":"junfondo","w":7,"i":"2026-10-12","f":"2026-10-18","m":"Prep. Generale 1","t":36000,"e1":20850,"tc":5050,"e2":6500,"e3":2500,"sp":1100,"ga":""},{"g":"junfondo","w":8,"i":"2026-10-19","f":"2026-10-25","m":"Prep. Generale 1","t":27000,"e1":15650,"tc":3800,"e2":4850,"e3":1900,"sp":800,"ga":""},{"g":"junfondo","w":9,"i":"2026-10-26","f":"2026-11-01","m":"Prep. Generale 1","t":32000,"e1":18550,"tc":4500,"e2":5750,"e3":2250,"sp":950,"ga":"52° Nico Sapio (C)"},{"g":"junfondo","w":10,"i":"2026-11-02","f":"2026-11-08","m":"Prep. Specifica 1","t":34000,"e1":17650,"tc":3750,"e2":7500,"e3":3400,"sp":1700,"ga":"Coppa LA I (C)"},{"g":"junfondo","w":11,"i":"2026-11-09","f":"2026-11-15","m":"Prep. Specifica 1","t":37000,"e1":19250,"tc":4050,"e2":8150,"e3":3700,"sp":1850,"ga":""},{"g":"junfondo","w":12,"i":"2026-11-16","f":"2026-11-22","m":"Prep. Specifica 1","t":39000,"e1":20250,"tc":4300,"e2":8600,"e3":3900,"sp":1950,"ga":""},{"g":"junfondo","w":13,"i":"2026-11-23","f":"2026-11-29","m":"Prep. Specifica 1","t":30000,"e1":15600,"tc":3300,"e2":6600,"e3":3000,"sp":1500,"ga":"Coppa LA II (C)"},{"g":"junfondo","w":14,"i":"2026-11-30","f":"2026-12-06","m":"Prep. Specifica 1","t":38000,"e1":19750,"tc":4200,"e2":8350,"e3":3800,"sp":1900,"ga":""},{"g":"junfondo","w":15,"i":"2026-12-07","f":"2026-12-13","m":"Prep. Specifica 1","t":33000,"e1":17150,"tc":3650,"e2":7250,"e3":3300,"sp":1650,"ga":""},{"g":"junfondo","w":16,"i":"2026-12-14","f":"2026-12-20","m":"Prep. Specifica 1","t":25000,"e1":12500,"tc":2000,"e2":4250,"e3":3000,"sp":3250,"ga":"Coppa Caduti Brema (B)"},{"g":"junfondo","w":17,"i":"2026-12-21","f":"2026-12-27","m":"Transizione/Holiday","t":20000,"e1":13000,"tc":2600,"e2":3000,"e3":1000,"sp":400,"ga":""},{"g":"junfondo","w":18,"i":"2026-12-28","f":"2027-01-03","m":"Transizione/Holiday","t":22000,"e1":14300,"tc":2850,"e2":3300,"e3":1100,"sp":450,"ga":""},{"g":"junfondo","w":19,"i":"2027-01-04","f":"2027-01-10","m":"Prep. Specifica 2","t":30000,"e1":16500,"tc":3900,"e2":6000,"e3":2400,"sp":1200,"ga":""},{"g":"junfondo","w":20,"i":"2027-01-11","f":"2027-01-17","m":"Prep. Specifica 2","t":34000,"e1":18750,"tc":4400,"e2":6800,"e3":2700,"sp":1350,"ga":""},{"g":"junfondo","w":21,"i":"2027-01-18","f":"2027-01-24","m":"Prep. Specifica 2","t":32000,"e1":17600,"tc":4150,"e2":6400,"e3":2550,"sp":1300,"ga":"Coppa LA III (C)"},{"g":"junfondo","w":22,"i":"2027-01-25","f":"2027-01-31","m":"Prep. Specifica 2","t":36000,"e1":19750,"tc":4700,"e2":7200,"e3":2900,"sp":1450,"ga":""},{"g":"junfondo","w":23,"i":"2027-02-01","f":"2027-02-07","m":"Pre-Gara B","t":37000,"e1":19300,"tc":4050,"e2":7750,"e3":3700,"sp":2200,"ga":""},{"g":"junfondo","w":24,"i":"2027-02-08","f":"2027-02-14","m":"Pre-Gara B","t":24000,"e1":12000,"tc":1900,"e2":4100,"e3":2900,"sp":3100,"ga":"Trofeo Albanese (B)"},{"g":"junfondo","w":25,"i":"2027-02-15","f":"2027-02-21","m":"Prep. Specifica 3/reload","t":30000,"e1":16500,"tc":3600,"e2":5700,"e3":2700,"sp":1500,"ga":""},{"g":"junfondo","w":26,"i":"2027-02-22","f":"2027-02-28","m":"Taper esteso Ob.1","t":29000,"e1":15100,"tc":2600,"e2":5200,"e3":3200,"sp":2900,"ga":"Reg. Categoria inizia 6/3 (A)"},{"g":"junfondo","w":27,"i":"2027-03-01","f":"2027-03-07","m":"Taper esteso Ob.1","t":23000,"e1":10350,"tc":1150,"e2":3450,"e3":2750,"sp":5300,"ga":"Camp. Reg. di Categoria (A)"},{"g":"junfondo","w":28,"i":"2027-03-08","f":"2027-03-14","m":"Taper esteso Ob.1","t":26000,"e1":14300,"tc":2600,"e2":4700,"e3":2600,"sp":1800,"ga":"(coda gara 11-14/3)"},{"g":"junfondo","w":29,"i":"2027-03-15","f":"2027-03-21","m":"Taper esteso Ob.1","t":20000,"e1":9600,"tc":1000,"e2":3000,"e3":2600,"sp":3800,"ga":""},{"g":"junfondo","w":30,"i":"2027-03-22","f":"2027-03-28","m":"Taper esteso Ob.1","t":15000,"e1":6750,"tc":600,"e2":2100,"e3":1800,"sp":3750,"ga":"OBIETTIVO 1: Criteria Nazionali Giovanili SC (A)"},{"g":"junfondo","w":31,"i":"2027-03-29","f":"2027-04-04","m":"Transizione 2","t":13000,"e1":10150,"tc":1950,"e2":900,"e3":0,"sp":0,"ga":""},{"g":"junfondo","w":32,"i":"2027-04-05","f":"2027-04-11","m":"Transizione 2","t":20000,"e1":12000,"tc":3000,"e2":3600,"e3":1000,"sp":400,"ga":""},{"g":"junfondo","w":33,"i":"2027-04-12","f":"2027-04-18","m":"Transizione 2","t":26000,"e1":14250,"tc":3650,"e2":5200,"e3":2100,"sp":800,"ga":"Test Vcrit ricalibrazione LC"},{"g":"junfondo","w":34,"i":"2027-04-19","f":"2027-04-25","m":"Transizione 2","t":30000,"e1":15900,"tc":3900,"e2":6300,"e3":2700,"sp":1200,"ga":"Coppa LA Summer 1 (C)"},{"g":"junfondo","w":35,"i":"2027-04-26","f":"2027-05-02","m":"Prep. Specifica LC","t":33000,"e1":17200,"tc":3950,"e2":7250,"e3":3300,"sp":1300,"ga":""},{"g":"junfondo","w":36,"i":"2027-05-03","f":"2027-05-09","m":"Prep. Specifica LC","t":37000,"e1":19200,"tc":4450,"e2":8150,"e3":3700,"sp":1500,"ga":""},{"g":"junfondo","w":37,"i":"2027-05-10","f":"2027-05-16","m":"Prep. Specifica LC","t":35000,"e1":18200,"tc":4200,"e2":7700,"e3":3500,"sp":1400,"ga":"Trofeo Sisport (C)"},{"g":"junfondo","w":38,"i":"2027-05-17","f":"2027-05-23","m":"Prep. Specifica LC","t":38000,"e1":19800,"tc":4550,"e2":8350,"e3":3800,"sp":1500,"ga":""},{"g":"junfondo","w":39,"i":"2027-05-24","f":"2027-05-30","m":"Prep. Specifica LC","t":31000,"e1":16150,"tc":3700,"e2":6800,"e3":3100,"sp":1250,"ga":"Coppa LA Summer 2 (C)"},{"g":"junfondo","w":40,"i":"2027-05-31","f":"2027-06-06","m":"Prep. Specifica LC","t":37000,"e1":19200,"tc":4450,"e2":8150,"e3":3700,"sp":1500,"ga":""},{"g":"junfondo","w":41,"i":"2027-06-07","f":"2027-06-13","m":"Prep. alla Gara 2","t":34000,"e1":18700,"tc":3750,"e2":6450,"e3":3050,"sp":2050,"ga":"Camp. Reg. Assoluto (C)"},{"g":"junfondo","w":42,"i":"2027-06-14","f":"2027-06-20","m":"Prep. alla Gara 2","t":36000,"e1":18050,"tc":3250,"e2":7900,"e3":4300,"sp":2500,"ga":""},{"g":"junfondo","w":43,"i":"2027-06-21","f":"2027-06-27","m":"Prep. alla Gara 2","t":33000,"e1":16550,"tc":2950,"e2":7250,"e3":3950,"sp":2300,"ga":""},{"g":"junfondo","w":44,"i":"2027-06-28","f":"2027-07-04","m":"Prep. alla Gara 2","t":37000,"e1":18450,"tc":3350,"e2":8150,"e3":4450,"sp":2600,"ga":""},{"g":"junfondo","w":45,"i":"2027-07-05","f":"2027-07-11","m":"Taper esteso Ob.2","t":23000,"e1":10350,"tc":1150,"e2":3450,"e3":2750,"sp":5300,"ga":"Camp. Reg. di Categoria Ragazzi (A), 11-12/7"},{"g":"junfondo","w":46,"i":"2027-07-12","f":"2027-07-18","m":"Taper esteso Ob.2","t":26000,"e1":14300,"tc":2600,"e2":4700,"e3":2600,"sp":1800,"ga":""},{"g":"junfondo","w":47,"i":"2027-07-19","f":"2027-07-25","m":"Taper esteso Ob.2","t":21000,"e1":10550,"tc":1450,"e2":3350,"e3":2500,"sp":3150,"ga":""},{"g":"junfondo","w":48,"i":"2027-07-26","f":"2027-08-01","m":"Taper esteso Ob.2","t":18000,"e1":8450,"tc":900,"e2":2700,"e3":2350,"sp":3600,"ga":""},{"g":"junfondo","w":49,"i":"2027-08-02","f":"2027-08-08","m":"Taper esteso Ob.2","t":14000,"e1":6300,"tc":550,"e2":1950,"e3":1700,"sp":3500,"ga":"OBIETTIVO 2: Categoria Estivi (A)"}];
+
+const GRUPPI = [
+  {id:"cadetti",  nome:"Cadetti"},
+  {id:"ragazzi",  nome:"Ragazzi"},
+  {id:"junfondo", nome:"Junfondo"}
+];
+const ZONE   = [["en1","En-1"],["tec","TEC"],["en2","En-2"],["en3","En-3"],["sp","Sp"]];
+const STILI  = [["sl","SL"],["do","DO"],["ra","RA"],["fa","FA"],["mx","MX"]];
+const BLOCCHI= [["wu","Risc"],["tec","Tec"],["pre","Pre"],["main","Serie"],["comp","Compl"],["def","Defat"]];
+const ATTREZZI = ["gambe","pull","palette","pinne","snorkel","paracadute","tavola","elastico","scull","drill","build","UDK"];
+const GIORNI = ["lun","mar","mer","gio","ven","sab","dom"];
+
+/* ============ salvataggio ============ */
+const Memoria = (() => {
+  let ok = true, cache = {};
+  try {
+    const k = "__prova__"; localStorage.setItem(k,"1"); localStorage.removeItem(k);
+  } catch(e){ ok = false; }
+  return {
+    disponibile: ok,
+    leggi(k, dflt){
+      try { const v = ok ? localStorage.getItem(k) : cache[k];
+            return v ? JSON.parse(v) : dflt; } catch(e){ return dflt; }
+    },
+    scrivi(k, v){
+      const s = JSON.stringify(v);
+      try { if(ok) localStorage.setItem(k, s); else cache[k] = s; }
+      catch(e){ ok = false; cache[k] = s; mostraAvviso(); }
+    }
+  };
+})();
+
+const K_SERIE = "vasca_serie_v1", K_PIANO = "vasca_piano_v1", K_PREF = "vasca_pref_v1",
+      K_CEST = "vasca_cestino_v1", K_SYNC = "vasca_sync_v1";
+
+let serie = Memoria.leggi(K_SERIE, []);
+let piano = Memoria.leggi(K_PIANO, null) || PIANO_SEED.slice();
+let pref  = Memoria.leggi(K_PREF, {gruppo:"cadetti"});
+let eliminati = Memoria.leggi(K_CEST, []);
+let sync  = Memoria.leggi(K_SYNC, {url:"", token:"", ultimo:""});
+
+const salvaSerie = () => Memoria.scrivi(K_SERIE, serie);
+const salvaPiano = () => Memoria.scrivi(K_PIANO, piano);
+const salvaPref  = () => Memoria.scrivi(K_PREF, pref);
+const salvaCest  = () => Memoria.scrivi(K_CEST, eliminati);
+const salvaSync  = () => Memoria.scrivi(K_SYNC, sync);
+
+function butta(ids){
+  const t = Date.now();
+  ids.forEach(id => { if(!eliminati.some(e => e.id === id)) eliminati.push({id, ts:t}); });
+  salvaCest();
+}
+
+function mostraAvviso(){
+  const el = document.getElementById("avviso");
+  el.hidden = false;
+  el.textContent = "Il browser non sta salvando i dati su questo dispositivo. " +
+    "Le serie restano solo finché la pagina è aperta: esporta un backup da Dati prima di chiudere.";
+}
+
+/* ============ utilità ============ */
+const fmt = n => Math.round(n).toLocaleString("it-IT");
+const oggiISO = () => { const d = new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset());
+                        return d.toISOString().slice(0,10); };
+const gg = iso => { const d = new Date(iso+"T12:00:00"); return (d.getDay()+6)%7; };
+const dataBreve = iso => { const d = new Date(iso+"T12:00:00");
+  return d.getDate()+" "+["gen","feb","mar","apr","mag","giu","lug","ago","set","ott","nov","dic"][d.getMonth()]; };
+const metriDi = s => s.r * s.m;
+const nomeZona = z => (ZONE.find(x => x[0]===z)||["","?"])[1];
+const nomeStile = s => (STILI.find(x => x[0]===s)||["","?"])[1];
+const colZona = z => getComputedStyle(document.documentElement).getPropertyValue("--"+z).trim() || "#888";
+const colStile = s => getComputedStyle(document.documentElement).getPropertyValue("--"+s).trim() || "#888";
+
+function settimanaDi(iso, gruppo){
+  const p = piano.filter(r => r.g === gruppo).find(r => iso >= r.i && iso <= r.f);
+  if (p) return p;
+  const d = new Date(iso+"T12:00:00"); const off = (d.getDay()+6)%7;
+  const lun = new Date(d); lun.setDate(d.getDate()-off);
+  const sab = new Date(lun); sab.setDate(lun.getDate()+5);
+  const iso2 = x => x.toISOString().slice(0,10);
+  return {g:gruppo, w:null, i:iso2(lun), f:iso2(sab), m:"fuori piano",
+          t:0, e1:0, tc:0, e2:0, e3:0, sp:0, ga:""};
+}
+const serieDi = (gruppo, da, a) => serie.filter(s => s.g===gruppo && s.d>=da && s.d<=a);
+
+function sommaZone(lista){
+  const z = {en1:0,tec:0,en2:0,en3:0,sp:0};
+  lista.forEach(s => { z[s.z] = (z[s.z]||0) + metriDi(s); });
+  return z;
+}
+function sommaStili(lista){
+  const t = {sl:0,do:0,ra:0,fa:0,mx:0};
+  lista.forEach(s => { t[s.s] = (t[s.s]||0) + metriDi(s); });
+  return t;
+}
+const totale = lista => lista.reduce((a,s) => a + metriDi(s), 0);
+
+/* ============ interpretazione del testo ============ */
+const V_STILE = {sl:"sl",st:"sl",crawl:"sl",libero:"sl",do:"do",dorso:"do",bk:"do",
+  ra:"ra",rana:"ra",br:"ra",fa:"fa",df:"fa",delfino:"fa",farfalla:"fa",fly:"fa",
+  mx:"mx",misto:"mx",im:"mx"};
+const V_ZONA = {en1:"en1","en-1":"en1",a1:"en1",a2:"en1",tec:"tec",tecnica:"tec",
+  en2:"en2","en-2":"en2",b1:"en2",soglia:"en2",en3:"en3","en-3":"en3",b2:"en3",
+  sp:"sp",sprint:"sp",c:"sp"};
+const V_BLOCCO = {wu:"wu",risc:"wu",riscaldamento:"wu",tec:"tec",tecnica:"tec",
+  pre:"pre",preserie:"pre",main:"main",serie:"main",principale:"main",
+  comp:"comp",compl:"comp",complemento:"comp",def:"def",defat:"def",defaticamento:"def"};
+const V_ATTR = {};
+ATTREZZI.forEach(a => V_ATTR[a.toLowerCase()] = a);
+V_ATTR["sculling"] = "scull"; V_ATTR["scull"] = "scull"; V_ATTR["tubo"] = "tubo";
+V_ATTR["drag"] = "drag"; V_ATTR["ubk"] = "UDK"; V_ATTR["udk"] = "UDK";
+
+function leggiRiga(riga){
+  let t = riga.trim(); if(!t || t.startsWith("#")) return null;
+  t = t.replace(/(\d)\.(\d{3})\b/g, "$1$2");
+  let rip = 1, dist = 0;
+  const mult = t.match(/(\d+)\s*[x×*]\s*(\d+)/i);
+  if (mult){ rip = +mult[1]; dist = +mult[2]; t = t.replace(mult[0], " "); }
+  else { const solo = t.match(/(?:^|\s)(\d{2,4})(?=\s|$)/); if(!solo) return null;
+         dist = +solo[1]; t = t.replace(solo[0], " "); }
+  if (!dist) return null;
+  const r = {r:rip, m:dist, s:"sl", z:"en1", b:"main", a:[], p:"", n:""};
+  let vistoZona = false, vistoBlocco = false, vistoStile = false, note = [];
+  t.split(/[\s,;]+/).filter(Boolean).forEach(tok => {
+    const k = tok.toLowerCase().replace(/[.]$/,"");
+    if (/^p?\d{1,2}[:'.]\d{2}"?$/.test(k)){ r.p = k.replace(/^p/,""); return; }
+    if (V_STILE[k] !== undefined && !vistoStile){ r.s = V_STILE[k]; vistoStile = true; return; }
+    if (V_ZONA[k] !== undefined && !vistoZona){
+      r.z = V_ZONA[k]; vistoZona = true;
+      if (k === "tec" && !vistoBlocco){ r.b = "tec"; vistoBlocco = true; }
+      return; }
+    if (V_BLOCCO[k] !== undefined && !vistoBlocco){ r.b = V_BLOCCO[k]; vistoBlocco = true; return; }
+    if (V_ATTR[k] !== undefined){ r.a.push(V_ATTR[k]); return; }
+    note.push(tok);
+  });
+  if (r.a.includes("scull") && !vistoZona) r.z = "tec";
+  if (r.z === "tec" && !vistoBlocco) r.b = "tec";
+  r.n = note.join(" ");
+  return r;
+}
+const leggiTesto = txt => txt.split(/\n/).map(leggiRiga).filter(Boolean);
+
+/* ============ stato del modulo ============ */
+let bozza = {r:1, m:0, s:"sl", z:"en1", b:"main", a:[]};
+let dataW = null;   // settimana in consultazione, indipendente dalla data della seduta
+const dataSettimana = () => dataW || document.getElementById("data").value;
+function spostaSettimana(giorni){
+  const d = new Date(dataSettimana() + "T12:00:00");
+  d.setDate(d.getDate() + giorni);
+  dataW = d.toISOString().slice(0,10);
+  disegnaSettimana();
+}
+
+function chips(cont, voci, attivo, click, cls){
+  cont.innerHTML = "";
+  voci.forEach(v => {
+    const b = document.createElement("button");
+    b.className = "chip " + (cls||"");
+    b.textContent = v.et;
+    b.setAttribute("aria-pressed", attivo(v.val) ? "true" : "false");
+    if (v.col && attivo(v.val)) b.style.background = v.col, b.style.borderColor = v.col;
+    else b.style.background = "", b.style.borderColor = "";
+    b.onclick = () => { click(v.val); };
+    cont.appendChild(b);
+  });
+}
+
+function disegnaForm(){
+  chips(document.getElementById("c-rip"),
+    [1,2,3,4,5,6,8,10,12,16,20].map(n => ({val:n, et:"×"+n})),
+    v => bozza.r === v, v => { bozza.r = v; disegnaForm(); anteprima(); }, "piccolo");
+  chips(document.getElementById("c-dist"),
+    [25,50,75,100,150,200,300,400,500,800,1000,1500].map(n => ({val:n, et:n})),
+    v => bozza.m === v, v => { bozza.m = (bozza.m===v?0:v); disegnaForm(); anteprima(); });
+  chips(document.getElementById("c-stile"),
+    STILI.map(([id,et]) => ({val:id, et, col:colStile(id)})),
+    v => bozza.s === v, v => { bozza.s = v; disegnaForm(); anteprima(); });
+  chips(document.getElementById("c-zona"),
+    ZONE.map(([id,et]) => ({val:id, et, col:colZona(id)})),
+    v => bozza.z === v, v => { bozza.z = v; disegnaForm(); anteprima(); }, "z");
+  chips(document.getElementById("c-blocco"),
+    BLOCCHI.map(([id,et]) => ({val:id, et})),
+    v => bozza.b === v, v => { bozza.b = v; disegnaForm(); anteprima(); }, "piccolo");
+  chips(document.getElementById("c-attr"),
+    ATTREZZI.map(a => ({val:a, et:a})),
+    v => bozza.a.includes(v),
+    v => { const i = bozza.a.indexOf(v); i<0 ? bozza.a.push(v) : bozza.a.splice(i,1);
+           disegnaForm(); anteprima(); }, "piccolo");
+}
+
+function descrizione(s){
+  const p = [];
+  if (s.r > 1) p.push(s.r + "×" + s.m); else p.push(String(s.m));
+  p.push(nomeStile(s.s)); p.push(nomeZona(s.z));
+  return p.join(" ");
+}
+function dettaglio(s, senzaBlocco){
+  const p = [];
+  const b = BLOCCHI.find(x => x[0] === s.b); if (b && !senzaBlocco) p.push(b[1]);
+  if (s.a && s.a.length) p.push(s.a.join(" + "));
+  if (s.p) p.push("part. " + s.p);
+  if (s.n) p.push(s.n);
+  if (s.f === 0) p.push("programmato");
+  return p.join(" · ");
+}
+
+function anteprima(){
+  const ok = bozza.m > 0;
+  document.getElementById("prev-testo").textContent = ok ? descrizione(bozza) : "—";
+  document.getElementById("prev-metri").textContent = fmt(ok ? bozza.r*bozza.m : 0) + " m";
+  document.getElementById("aggiungi").disabled = !ok;
+}
+
+function anteprimaTesto(){
+  const righe = leggiTesto(document.getElementById("testo").value);
+  const m = righe.reduce((a,r) => a + r.r*r.m, 0);
+  document.getElementById("prevt-testo").textContent =
+    righe.length ? righe.length + (righe.length===1 ? " serie" : " serie") : "—";
+  document.getElementById("prevt-metri").textContent = fmt(m) + " m";
+  document.getElementById("aggiungi-testo").disabled = !righe.length;
+}
+
+/* ============ seduta ============ */
+function disegnaSeduta(){
+  const d = document.getElementById("data").value, g = pref.gruppo;
+  const lista = serie.filter(s => s.d === d && s.g === g);
+  const ul = document.getElementById("elenco-serie");
+  ul.innerHTML = "";
+  const nomeG = (GRUPPI.find(x => x.id===g)||{}).nome || g;
+  document.getElementById("titolo-seduta").textContent =
+    nomeG + " · " + GIORNI[gg(d)] + " " + dataBreve(d);
+
+  if (!lista.length){
+    ul.innerHTML = '<li><span class="vuoto">' + (sync.sola
+      ? "Nessuna seduta per questo giorno. Con le frecce qui sopra passi agli altri giorni."
+      : "Ancora niente per questa data. Componi la prima serie qui sopra, oppure passa a Testo e incolla la seduta intera.") +
+      '</span></li>';
+  } else if (sync.sola){
+    schedaSeduta(lista, ul);
+  } else {
+    lista.forEach(s => {
+      const li = document.createElement("li");
+      const badge = document.createElement("span");
+      badge.className = "zbadge"; badge.style.background = colZona(s.z);
+      if (s.f === 0) badge.style.opacity = ".45";
+      const desc = document.createElement("span"); desc.className = "desc";
+      const b = document.createElement("b"); b.textContent = descrizione(s);
+      const sm = document.createElement("small"); sm.textContent = dettaglio(s);
+      desc.append(b, sm);
+      const mt = document.createElement("span"); mt.className = "mt"; mt.textContent = fmt(metriDi(s));
+      const del = document.createElement("button");
+      del.className = "icona"; del.textContent = "✕"; del.title = "Elimina la serie";
+      del.setAttribute("aria-label", "Elimina " + descrizione(s));
+      del.onclick = () => { butta([s.id]); serie = serie.filter(x => x.id !== s.id); salvaSerie(); disegnaTutto(); };
+      li.append(badge, desc, mt, del);
+      ul.appendChild(li);
+    });
+  }
+  const z = sommaZone(lista), tot = totale(lista);
+  document.getElementById("totale-seduta").textContent = fmt(tot) + " m";
+  document.getElementById("riepilogo-seduta").textContent = lista.length
+    ? ZONE.filter(([id]) => z[id] > 0).map(([id,et]) => et + " " + fmt(z[id])).join("  ·  ")
+    : "nessuna serie";
+}
+
+// vista di lettura: le serie raggruppate per blocco, niente comandi
+function schedaSeduta(lista, ul){
+  BLOCCHI.forEach(([bid, nome]) => {
+    const gruppo = lista.filter(s => s.b === bid);
+    if (!gruppo.length) return;
+    const testa = document.createElement("li");
+    testa.className = "blocco";
+    testa.innerHTML = '<span>' + nome + '</span><span>' + fmt(totale(gruppo)) + ' m</span>';
+    ul.appendChild(testa);
+    gruppo.forEach(s => {
+      const li = document.createElement("li");
+      li.className = "lettura";
+      const badge = document.createElement("span");
+      badge.className = "zbadge"; badge.style.background = colZona(s.z);
+      if (s.f === 0) badge.style.opacity = ".45";
+      const desc = document.createElement("span"); desc.className = "desc";
+      const b = document.createElement("b"); b.textContent = descrizione(s);
+      const sm = document.createElement("small"); sm.textContent = dettaglio(s, true);
+      desc.append(b, sm);
+      const mt = document.createElement("span"); mt.className = "mt"; mt.textContent = fmt(metriDi(s));
+      li.append(badge, desc, mt);
+      ul.appendChild(li);
+    });
+  });
+}
+
+function aggiungiSerie(righe){
+  const d = document.getElementById("data").value;
+  const f = +document.getElementById("stato").value;
+  righe.forEach(r => {
+    serie.push(Object.assign({}, r, {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2,7),
+      ts: Date.now(), d, g: pref.gruppo, f,
+      p: r.p || document.getElementById("partenza").value.trim(),
+      n: r.n || ""
+    }));
+  });
+  salvaSerie(); disegnaTutto();
+}
+
+/* ============ settimana ============ */
+function disegnaSettimana(){
+  const g = pref.gruppo, d = dataSettimana();
+  const w = settimanaDi(d, g);
+  const lista = serieDi(g, w.i, w.f);
+  const fatte = lista.filter(s => s.f !== 0), prog = lista.filter(s => s.f === 0);
+  const mFatti = totale(fatte), mProg = totale(prog), target = w.t;
+
+  document.getElementById("w-titolo").textContent =
+    w.w ? "Settimana " + w.w + " · " + w.m : "Fuori dal piano";
+  document.getElementById("w-date").textContent =
+    dataBreve(w.i) + " – " + dataBreve(w.f) + (w.ga ? " · " + w.ga : "");
+  document.getElementById("w-fatti").textContent = fmt(mFatti);
+  document.getElementById("w-target").textContent = "/ " + fmt(target) + " m";
+
+  // corsia: segmenti per zona + parte programmata
+  const corsia = document.getElementById("w-corsia");
+  corsia.innerHTML = '<div class="traguardo"></div>';
+  const scala = Math.max(target, mFatti + mProg, 1);
+  const zf = sommaZone(fatte);
+  ZONE.forEach(([id]) => {
+    if (zf[id] > 0){
+      const i = document.createElement("i");
+      i.style.width = (zf[id]/scala*100) + "%"; i.style.background = colZona(id);
+      i.title = nomeZona(id) + " " + fmt(zf[id]) + " m";
+      corsia.appendChild(i);
+    }
+  });
+  if (mProg > 0){
+    const i = document.createElement("i");
+    i.className = "prog";
+    i.style.width = (mProg/scala*100) + "%"; i.style.backgroundColor = "var(--tenue)";
+    i.title = "Programmato " + fmt(mProg) + " m";
+    corsia.appendChild(i);
+  }
+  corsia.querySelector(".traguardo").style.left = Math.min(target/scala*100, 100) + "%";
+
+  const manca = target - mFatti;
+  const giorniRimasti = (() => {
+    let n = 0;
+    for (let x = new Date(w.i+"T12:00:00"); x <= new Date(w.f+"T12:00:00"); x.setDate(x.getDate()+1)){
+      const iso = x.toISOString().slice(0,10);
+      if (iso >= oggiISO() && !serie.some(s => s.g===g && s.d===iso && s.f!==0)) n++;
+    }
+    return n;
+  })();
+  document.getElementById("w-manca").innerHTML = target === 0
+    ? "Nessun target a piano per questa settimana"
+    : (manca > 0 ? "Mancano <b>" + fmt(manca) + " m</b>" : "Target superato di <b>" + fmt(-manca) + " m</b>");
+  document.getElementById("w-ritmo").textContent =
+    (manca > 0 && giorniRimasti > 0)
+      ? fmt(manca/giorniRimasti) + " m × " + giorniRimasti + (giorniRimasti===1?" seduta":" sedute")
+      : (mProg > 0 ? fmt(mProg) + " m programmati" : "");
+
+  // giorni
+  const cont = document.getElementById("w-giorni");
+  cont.innerHTML = "";
+  const perGiorno = [];
+  for (let x = new Date(w.i+"T12:00:00"); x <= new Date(w.f+"T12:00:00"); x.setDate(x.getDate()+1)){
+    const iso = x.toISOString().slice(0,10);
+    const gl = lista.filter(s => s.d === iso);
+    perGiorno.push({iso, tot: totale(gl), zone: sommaZone(gl)});
+  }
+  const maxG = Math.max(1, ...perGiorno.map(x => x.tot));
+  perGiorno.forEach(x => {
+    const div = document.createElement("div");
+    div.className = "giorno" + (x.iso === oggiISO() ? " oggi" : "");
+    const pila = document.createElement("div");
+    pila.className = "pila";
+    pila.style.height = (x.tot/maxG*100) + "%";
+    ZONE.forEach(([id]) => {
+      if (x.zone[id] > 0){
+        const i = document.createElement("i");
+        i.style.height = (x.zone[id]/x.tot*100) + "%";
+        i.style.background = colZona(id);
+        pila.appendChild(i);
+      }
+    });
+    const sm = document.createElement("small");
+    sm.innerHTML = GIORNI[gg(x.iso)] + "<br>" + (x.tot ? fmt(x.tot/1000).replace(",",".") : "–");
+    div.append(pila, sm);
+    div.title = dataBreve(x.iso) + ": " + fmt(x.tot) + " m";
+    cont.appendChild(div);
+  });
+
+  // zone vs piano
+  const tb = document.getElementById("w-zone");
+  tb.innerHTML = "";
+  const pianoZ = {en1:w.e1, tec:w.tc, en2:w.e2, en3:w.e3, sp:w.sp};
+  ZONE.forEach(([id,et]) => {
+    const tr = document.createElement("tr");
+    const dif = zf[id] - pianoZ[id];
+    const perc = mFatti ? (zf[id]/mFatti*100) : 0;
+    tr.innerHTML =
+      '<td><span class="pallino" style="background:'+colZona(id)+'"></span>'+et+'</td>' +
+      '<td>'+fmt(zf[id])+'</td><td style="color:var(--tenue)">'+fmt(pianoZ[id])+'</td>' +
+      '<td class="'+(dif>=0?"delta-ok":"delta-neg")+'">'+(dif>=0?"+":"")+fmt(dif)+'</td>' +
+      '<td>'+perc.toFixed(0)+'%</td>';
+    tb.appendChild(tr);
+  });
+
+  // stili
+  const st = sommaStili(fatte), totS = mFatti;
+  const barra = document.getElementById("w-stili-barra"), leg = document.getElementById("w-stili-legenda");
+  barra.innerHTML = ""; leg.innerHTML = "";
+  if (totS){
+    STILI.forEach(([id,et]) => {
+      if (st[id] > 0){
+        const i = document.createElement("i");
+        i.style.width = (st[id]/totS*100) + "%"; i.style.background = colStile(id);
+        barra.appendChild(i);
+        const s = document.createElement("span");
+        s.innerHTML = '<span class="pallino" style="background:'+colStile(id)+'"></span>' +
+                      et + " " + (st[id]/totS*100).toFixed(0) + "% · " + fmt(st[id]) + " m";
+        leg.appendChild(s);
+      }
+    });
+    document.getElementById("w-stili-nota").textContent = "";
+  } else {
+    leg.innerHTML = '<span class="vuoto">Nessuna serie svolta questa settimana.</span>';
+    document.getElementById("w-stili-nota").textContent = "";
+  }
+
+  // carico
+  const oggi = new Date(oggiISO()+"T12:00:00");
+  const dietro = n => { const x = new Date(oggi); x.setDate(x.getDate()-n); return x.toISOString().slice(0,10); };
+  const acuto = totale(serie.filter(s => s.g===g && s.f!==0 && s.d > dietro(7) && s.d <= oggiISO()));
+  const cronico = totale(serie.filter(s => s.g===g && s.f!==0 && s.d > dietro(28) && s.d <= oggiISO()))/4;
+  const acwr = cronico ? acuto/cronico : 0;
+  const mesoSett = piano.filter(r => r.g===g && r.m === w.m);
+  const car = document.getElementById("w-carico");
+  const rigaC = (a,b,c) => '<tr><td>'+a+'</td><td>'+b+'</td><td style="color:var(--tenue);font-size:13px">'+(c||"")+'</td></tr>';
+  car.innerHTML =
+    rigaC("Ultimi 7 giorni", fmt(acuto)+" m", "") +
+    rigaC("Media 4 settimane", fmt(cronico)+" m", "") +
+    rigaC("ACWR", acwr ? acwr.toFixed(2) : "–",
+      acwr ? (acwr > 1.5 ? "sopra 1,5 — salto di carico" : acwr < 0.8 ? "sotto 0,8 — scarico" : "in banda 0,8–1,3") : "servono 4 settimane di dati") +
+    rigaC("Mesociclo", w.m, mesoSett.length ? mesoSett.length + " settimane, " + fmt(mesoSett.reduce((a,r)=>a+r.t,0)) + " m a piano" : "");
+}
+
+/* ============ stagione ============ */
+function disegnaStagione(){
+  const g = pref.gruppo;
+  const sett = piano.filter(r => r.g === g).sort((a,b) => a.w - b.w);
+  const tutte = serie.filter(s => s.g === g && s.f !== 0);
+  const oggi = oggiISO();
+
+  const pianoTot = sett.reduce((a,r) => a + r.t, 0);
+  const fattoTot = totale(tutte);
+  const trascorse = sett.filter(r => r.f < oggi);
+  const pianoAData = trascorse.reduce((a,r) => a + r.t, 0);
+  const limite = trascorse.length ? trascorse[trascorse.length-1].f : oggi;
+  const fattoAData = totale(tutte.filter(s => s.d <= limite));
+
+  const ri = document.getElementById("s-riepilogo");
+  const r = (a,b,c) => '<tr><td>'+a+'</td><td class="num" style="font-size:17px">'+b+'</td>' +
+                       '<td style="color:var(--tenue);font-size:13px">'+(c||"")+'</td></tr>';
+  ri.innerHTML =
+    r("Nuotato finora", fmt(fattoTot)+" m", trascorse.length + " settimane concluse") +
+    r("Piano a oggi", fmt(pianoAData)+" m",
+      pianoAData ? ((fattoAData-pianoAData >= 0 ? "+" : "") + fmt(fattoAData-pianoAData) + " m di scarto") : "") +
+    r("Piano stagione", fmt(pianoTot)+" m", sett.length + " settimane") +
+    r("Media settimanale", trascorse.length ? fmt(fattoTot/Math.max(trascorse.length,1))+" m" : "–", "");
+
+  const z = sommaZone(tutte), tot = fattoTot;
+  const barra = document.getElementById("s-zone-barra"), leg = document.getElementById("s-zone-legenda");
+  barra.innerHTML = ""; leg.innerHTML = "";
+  const energetici = tot - z.tec;
+  ZONE.forEach(([id,et]) => {
+    if (z[id] > 0 && tot){
+      const i = document.createElement("i");
+      i.style.width = (z[id]/tot*100) + "%"; i.style.background = colZona(id);
+      barra.appendChild(i);
+      const s = document.createElement("span");
+      s.innerHTML = '<span class="pallino" style="background:'+colZona(id)+'"></span>' +
+                    et + " " + (z[id]/tot*100).toFixed(1) + "%";
+      leg.appendChild(s);
+    }
+  });
+  if (!tot) leg.innerHTML = '<span class="vuoto">Nessuna serie registrata per questo gruppo.</span>';
+  else if (energetici > 0){
+    const s = document.createElement("span");
+    s.style.width = "100%"; s.style.color = "var(--tenue)";
+    s.textContent = "En-1 sui soli metri energetici (senza TEC): " + (z.en1/energetici*100).toFixed(1) + "%";
+    leg.appendChild(s);
+  }
+
+  const ul = document.getElementById("s-settimane");
+  ul.innerHTML = "";
+  let mesoCorr = null;
+  sett.forEach(w => {
+    if (w.m !== mesoCorr){
+      mesoCorr = w.m;
+      const h = document.createElement("li");
+      h.style.display = "block"; h.style.borderTop = "none";
+      h.innerHTML = '<div class="meso-testa">' + w.m + '</div>';
+      ul.appendChild(h);
+    }
+    const lista = tutte.filter(s => s.d >= w.i && s.d <= w.f);
+    const f = totale(lista), zz = sommaZone(lista);
+    const scala = Math.max(w.t, f, 1);
+    const li = document.createElement("li");
+    if (oggi >= w.i && oggi <= w.f) li.className = "corrente";
+    const barre = ZONE.filter(([id]) => zz[id] > 0)
+      .map(([id]) => '<i style="width:' + (zz[id]/scala*100) + '%;background:' + colZona(id) + '"></i>').join("");
+    li.innerHTML =
+      '<span class="w">' + w.w + '</span>' +
+      '<span class="mini"><span class="piano" style="width:' + (w.t/scala*100) + '%"></span>' +
+      '<span class="fatto">' + barre + '</span></span>' +
+      '<span class="val">' + (f ? '<b>'+fmt(f)+'</b>' : '–') + ' / ' + fmt(w.t) + '</span>';
+    li.title = dataBreve(w.i) + "–" + dataBreve(w.f) + (w.ga ? " · " + w.ga : "");
+    ul.appendChild(li);
+  });
+}
+
+/* ============ dati ============ */
+function disegnaDati(){
+  const g = pref.gruppo;
+  const n = serie.filter(s => s.g === g).length;
+  document.getElementById("d-stato").textContent =
+    (Memoria.disponibile ? "Salvataggio automatico su questo dispositivo attivo. " : "Salvataggio del browser non disponibile. ") +
+    serie.length + " serie in archivio (" + n + " del gruppo selezionato).";
+  const p = piano.filter(r => r.g === g);
+  statoSync();
+  document.getElementById("d-piano").textContent = p.length
+    ? p.length + " settimane a piano, da " + dataBreve(p[0].i) + " a " + dataBreve(p[p.length-1].f) +
+      ", per un totale di " + fmt(p.reduce((a,r) => a + r.t, 0)) + " m."
+    : "Nessun piano caricato per questo gruppo.";
+}
+
+function scarica(nome, testo, tipo){
+  const blob = new Blob([testo], {type: tipo});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = nome;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 200);
+}
+
+function esportaCSV(){
+  const testa = ["data","gruppo","blocco","ripetizioni","distanza","metri","stile","zona","attrezzi","partenza","stato","note"];
+  const righe = serie.slice().sort((a,b) => a.d.localeCompare(b.d)).map(s => [
+    s.d, s.g, s.b, s.r, s.m, metriDi(s), nomeStile(s.s), nomeZona(s.z),
+    (s.a||[]).join("+"), s.p||"", s.f===0?"programmato":"svolto", (s.n||"").replace(/;/g,",")
+  ].join(";"));
+  scarica("allenamenti-" + oggiISO() + ".csv", "\uFEFF" + testa.join(";") + "\n" + righe.join("\n"), "text/csv");
+}
+
+function importaPiano(txt){
+  const g = pref.gruppo, nuove = [];
+  const num = s => +String(s).replace(/[.*\s]/g,"").replace(/[^\d]/g,"") || 0;
+  txt.split("\n").forEach(riga => {
+    if (!riga.trim().startsWith("|")) return;
+    const c = riga.split("|").slice(1,-1).map(x => x.replace(/\*+/g,"").trim());
+    if (c.length < 9 || !/^\d+$/.test(c[0])) return;
+    const d = c[1].replace(/[–—]/g,"-").match(/(\d+)\/(\d+)(?:\/(\d+))?\s*-\s*(\d+)\/(\d+)\/(\d+)/);
+    if (!d) return;
+    const y2 = 2000 + (+d[6]);
+    const y1 = d[3] ? 2000 + (+d[3]) : (+d[2] > +d[5] ? y2 - 1 : y2);
+    const iso = (y,m,dd) => y + "-" + String(m).padStart(2,"0") + "-" + String(dd).padStart(2,"0");
+    nuove.push({g, w:+c[0], i:iso(y1,+d[2],+d[1]), f:iso(y2,+d[5],+d[4]), m:c[2],
+      t:num(c[3]), e1:num(c[4]), tc:num(c[5]), e2:num(c[6]), e3:num(c[7]), sp:num(c[8]),
+      ga:c[9] || ""});
+  });
+  if (!nuove.length){ alert("Nessuna riga riconosciuta. Servono le righe della tabella §5.2, quelle che iniziano con |."); return; }
+  const errori = nuove.filter(r => r.e1+r.tc+r.e2+r.e3+r.sp !== r.t);
+  piano = piano.filter(r => r.g !== g).concat(nuove);
+  salvaPiano(); disegnaTutto();
+  document.getElementById("piano-testo").value = "";
+  alert(nuove.length + " settimane caricate." +
+    (errori.length ? "\n\nAttenzione: in " + errori.length + " righe la somma delle zone non fa il totale (settimane " +
+      errori.map(r => r.w).join(", ") + ")." : "\n\nSomme delle zone verificate: tutte corrette."));
+}
+
+/* ============ ruolo del dispositivo ============ */
+function applicaRuolo(){
+  const sola = !!sync.sola;
+  document.querySelector('#nav button[data-vista="v-oggi"]').hidden = sola;
+  document.getElementById("sez-piano").hidden = sola;
+  document.getElementById("sez-azzera").hidden = sola;
+  document.getElementById("zona-inserimento").hidden = sola;
+  document.getElementById("campo-stato").hidden = sola;
+  document.getElementById("w-agg").hidden = !sync.url;
+  if (sola && document.getElementById("v-oggi").classList.contains("attiva")) vaiA("v-settimana");
+  chips(document.getElementById("c-ruolo"),
+    [{val:false, et:"Scrivo e leggo"}, {val:true, et:"Solo consultazione"}],
+    v => v === sola,
+    v => { sync.sola = v; salvaSync(); applicaRuolo(); statoSync(); }, "piccolo");
+}
+
+/* ============ foglio Google ============ */
+function statoSync(msg){
+  const el = document.getElementById("d-sync");
+  if (msg){ el.textContent = msg; return; }
+  el.textContent = !sync.url
+    ? "Non collegato. Incolla qui sotto l'indirizzo dell'app web e la parola d'ordine dello script."
+    : (sync.ultimo
+        ? (sync.sola ? "Solo consultazione. Ultimo aggiornamento: " : "Ultima sincronizzazione: ") +
+          new Date(sync.ultimo).toLocaleString("it-IT")
+        : "Collegato, mai sincronizzato.");
+}
+
+async function sincronizza(silenzioso){
+  if (!sync.url){ if(!silenzioso) statoSync("Manca l'indirizzo dell'app web."); return; }
+  statoSync("Sincronizzo…");
+  try {
+    const r = await fetch(sync.url, {
+      method: "POST", redirect: "follow",
+      headers: {"Content-Type": "text/plain;charset=utf-8"},
+      body: sync.sola
+        ? JSON.stringify({token: sync.token, sola: true})
+        : JSON.stringify({token: sync.token, serie, eliminati})
+    });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.errore || "risposta non riconosciuta");
+    serie = d.serie || [];
+    eliminati = d.eliminati || [];
+    sync.ultimo = new Date().toISOString();
+    salvaSerie(); salvaCest(); salvaSync(); disegnaTutto();
+    statoSync(serie.length + (sync.sola ? " serie scaricate dal foglio · " : " serie allineate col foglio · ") +
+              new Date(sync.ultimo).toLocaleString("it-IT"));
+  } catch(err){
+    statoSync("Non ha funzionato: " + err.message +
+      ". Controlla indirizzo e parola d'ordine, e che l'app web sia distribuita per chiunque abbia il link.");
+  }
+}
+
+/* ============ navigazione e avvio ============ */
+function disegnaTutto(){
+  disegnaSeduta(); disegnaSettimana(); disegnaStagione(); disegnaDati();
+}
+
+function disegnaGruppi(){
+  const cont = document.getElementById("gruppi");
+  cont.innerHTML = "";
+  GRUPPI.forEach(g => {
+    const b = document.createElement("button");
+    b.textContent = g.nome;
+    b.setAttribute("aria-pressed", pref.gruppo === g.id ? "true" : "false");
+    b.onclick = () => { pref.gruppo = g.id; salvaPref(); disegnaGruppi(); disegnaTutto(); };
+    cont.appendChild(b);
+  });
+}
+
+function vaiA(id){
+  document.querySelectorAll("#nav button").forEach(x =>
+    x.setAttribute("aria-pressed", x.dataset.vista === id ? "true" : "false"));
+  document.querySelectorAll(".vista").forEach(v =>
+    v.classList.toggle("attiva", v.id === id));
+  window.scrollTo({top:0});
+}
+document.getElementById("nav").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  vaiA(b.dataset.vista);
+});
+function spostaGiorno(n){
+  const c = document.getElementById("data");
+  const d = new Date(c.value + "T12:00:00");
+  d.setDate(d.getDate() + n);
+  c.value = d.toISOString().slice(0,10);
+  dataW = null; disegnaTutto();
+}
+document.getElementById("g-prec").onclick = () => spostaGiorno(-1);
+document.getElementById("g-succ").onclick = () => spostaGiorno(1);
+document.getElementById("w-prec").onclick = () => spostaSettimana(-7);
+document.getElementById("w-succ").onclick = () => spostaSettimana(7);
+document.getElementById("w-agg").onclick = () => { sincronizza(false); vaiA("v-dati"); };
+
+document.getElementById("modo-form").onclick = () => cambiaModo(true);
+document.getElementById("modo-testo").onclick = () => cambiaModo(false);
+function cambiaModo(form){
+  document.getElementById("modo-form").setAttribute("aria-pressed", form ? "true" : "false");
+  document.getElementById("modo-testo").setAttribute("aria-pressed", form ? "false" : "true");
+  document.getElementById("form-serie").hidden = !form;
+  document.getElementById("form-testo").hidden = form;
+}
+
+document.getElementById("aggiungi").onclick = () => {
+  aggiungiSerie([{r:bozza.r, m:bozza.m, s:bozza.s, z:bozza.z, b:bozza.b, a:bozza.a.slice(),
+                  p:"", n:document.getElementById("nota").value.trim()}]);
+  document.getElementById("nota").value = "";
+};
+document.getElementById("pulisci").onclick = () => {
+  bozza = {r:1, m:0, s:"sl", z:"en1", b:"main", a:[]};
+  document.getElementById("nota").value = ""; document.getElementById("partenza").value = "";
+  disegnaForm(); anteprima();
+};
+document.getElementById("testo").addEventListener("input", anteprimaTesto);
+document.getElementById("aggiungi-testo").onclick = () => {
+  aggiungiSerie(leggiTesto(document.getElementById("testo").value));
+  document.getElementById("testo").value = ""; anteprimaTesto();
+};
+document.getElementById("data").addEventListener("change", () => { dataW = null; disegnaTutto(); });
+document.getElementById("exp-csv").onclick = esportaCSV;
+document.getElementById("exp-json").onclick = () =>
+  scarica("vasca-backup-" + oggiISO() + ".json", JSON.stringify({serie, piano, v:1}), "application/json");
+document.getElementById("imp-json").onclick = () => document.getElementById("file-json").click();
+document.getElementById("file-json").addEventListener("change", e => {
+  const f = e.target.files[0]; if (!f) return;
+  const lettore = new FileReader();
+  lettore.onload = () => {
+    try {
+      const d = JSON.parse(lettore.result);
+      if (!Array.isArray(d.serie)) throw new Error("formato");
+      serie = d.serie; if (Array.isArray(d.piano) && d.piano.length) piano = d.piano;
+      salvaSerie(); salvaPiano(); disegnaTutto();
+      alert(serie.length + " serie caricate.");
+    } catch(err){ alert("Il file non è un backup valido."); }
+  };
+  lettore.readAsText(f); e.target.value = "";
+});
+document.getElementById("sync-salva").onclick = () => {
+  sync.url = document.getElementById("sync-url").value.trim();
+  sync.token = document.getElementById("sync-token").value.trim();
+  salvaSync(); statoSync("Indirizzo salvato.");
+};
+document.getElementById("sync-ora").onclick = () => {
+  sync.url = document.getElementById("sync-url").value.trim();
+  sync.token = document.getElementById("sync-token").value.trim();
+  salvaSync(); sincronizza(false);
+};
+document.getElementById("imp-piano").onclick = () =>
+  importaPiano(document.getElementById("piano-testo").value);
+document.getElementById("canc-gruppo").onclick = () => {
+  const g = pref.gruppo;
+  if (!confirm("Cancello tutte le serie del gruppo " + g + "? Non si torna indietro.")) return;
+  butta(serie.filter(s => s.g === g).map(s => s.id));
+  serie = serie.filter(s => s.g !== g); salvaSerie(); disegnaTutto();
+};
+document.getElementById("canc-tutto").onclick = () => {
+  if (!confirm("Cancello tutte le serie di tutti i gruppi? Non si torna indietro.")) return;
+  butta(serie.map(s => s.id));
+  serie = []; salvaSerie(); disegnaTutto();
+};
+
+document.getElementById("data").value = oggiISO();
+document.getElementById("sync-url").value = sync.url || "";
+document.getElementById("sync-token").value = sync.token || "";
+if (!Memoria.disponibile) mostraAvviso();
+disegnaGruppi(); disegnaForm(); anteprima(); anteprimaTesto(); disegnaTutto(); applicaRuolo();
+if (sync.url) sincronizza(true);
+if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0)
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
+</body>
+</html>
