@@ -109,6 +109,10 @@ textarea{min-height:132px; line-height:1.55; resize:vertical; font-family:ui-mon
 .chip[aria-pressed="true"]{background:var(--tile); color:var(--vasca); border-color:var(--tile)}
 .chip.z[aria-pressed="true"]{color:#08222C}
 .chip.piccolo{font-family:var(--f-body); font-size:14.5px; font-weight:500; padding:8px 11px; min-height:38px}
+.chip.aggiungi-voce{border-style:dashed; color:var(--tenue); min-width:44px}
+.nuova-voce{display:flex; gap:6px; width:100%; margin-top:2px}
+.nuova-voce input{flex:1; min-width:0}
+.nuova-voce button{flex:none}
 .anteprima{margin-top:14px; padding:12px 13px; border-radius:11px; background:#0A2531; border:1px dashed var(--bordo);
   display:flex; justify-content:space-between; align-items:center; gap:10px}
 .anteprima .testo{font-family:var(--f-disp); font-size:20px; font-weight:600}
@@ -417,6 +421,15 @@ def 1x300 mx en1"></textarea>
       </div>
     </div>
 
+    <div class="sez" id="sez-voci">
+      <h2>Voci mie</h2>
+      <div class="pannello">
+        <p class="nota" style="margin-top:0">Quello che aggiungi col + resta qui. Toglierne una non tocca
+          le serie già scritte: se una voce è in uso continua a comparire nei pulsanti e nei grafici.</p>
+        <div id="elenco-voci"></div>
+      </div>
+    </div>
+
     <div class="sez" id="sez-piano">
       <h2>Piano settimanale</h2>
       <div class="pannello">
@@ -521,10 +534,66 @@ const gg = iso => { const d = new Date(iso+"T12:00:00"); return (d.getDay()+6)%7
 const dataBreve = iso => { const d = new Date(iso+"T12:00:00");
   return d.getDate()+" "+["gen","feb","mar","apr","mag","giu","lug","ago","set","ott","nov","dic"][d.getMonth()]; };
 const metriDi = s => s.r * s.m;
-const nomeZona = z => (ZONE.find(x => x[0]===z)||["","?"])[1];
-const nomeStile = s => (STILI.find(x => x[0]===s)||["","?"])[1];
-const colZona = z => getComputedStyle(document.documentElement).getPropertyValue("--"+z).trim() || "#888";
-const colStile = s => getComputedStyle(document.documentElement).getPropertyValue("--"+s).trim() || "#888";
+const nomeZona  = z => (ZONE.find(x => x[0]===z)||["",z])[1];
+const nomeStile = s => (STILI.find(x => x[0]===s)||["",s])[1];
+const nomeBlocco= b => (BLOCCHI.find(x => x[0]===b)||["",b])[1];
+
+// una voce inventata da Gabriele non ha una variabile CSS: le si assegna
+// un colore stabile, così resta lo stesso in tutti i grafici e su tutti i dispositivi
+function coloreDa(id){
+  let h = 0; const t = String(id);
+  for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) % 360;
+  return "hsl(" + h + " 42% 56%)";
+}
+function coloreVar(id){
+  if (!/^[a-z0-9_-]+$/i.test(String(id))) return coloreDa(id);
+  const v = getComputedStyle(document.documentElement).getPropertyValue("--" + id).trim();
+  return v || coloreDa(id);
+}
+const colZona  = z => coloreVar(z);
+const colStile = s => coloreVar(s);
+
+// voci disponibili per categoria: le mie di partenza, quelle aggiunte a mano,
+// e quelle che compaiono nelle serie (così arrivano anche dagli altri dispositivi)
+const BASE = {
+  rip:  [1,2,3,4,5,6,8,10,12,16,20],
+  dist: [25,50,75,100,150,200,300,400,500,800,1000,1500],
+  stile: STILI.map(x => x[0]),
+  zona:  ZONE.map(x => x[0]),
+  blocco: BLOCCHI.map(x => x[0]),
+  attr:  ATTREZZI.slice()
+};
+function voci(cat){
+  const mie = (pref.voci && pref.voci[cat]) || [];
+  let dalDato = [];
+  if (cat === "stile")  dalDato = serie.map(s => s.s);
+  if (cat === "zona")   dalDato = serie.map(s => s.z);
+  if (cat === "blocco") dalDato = serie.map(s => s.b);
+  if (cat === "attr")   dalDato = serie.reduce((a,s) => a.concat(s.a || []), []);
+  const fuori = [];
+  BASE[cat].concat(mie, dalDato).forEach(v => {
+    if (v !== undefined && v !== null && v !== "" && fuori.indexOf(v) < 0) fuori.push(v);
+  });
+  if (cat === "rip" || cat === "dist") fuori.sort((a,b) => a - b);
+  return fuori;
+}
+function etichetta(cat, v){
+  if (cat === "stile")  return nomeStile(v);
+  if (cat === "zona")   return nomeZona(v);
+  if (cat === "blocco") return nomeBlocco(v);
+  if (cat === "rip")    return "×" + v;
+  return String(v);
+}
+function ricorda(cat, v){
+  if (!pref.voci) pref.voci = {};
+  if (!pref.voci[cat]) pref.voci[cat] = [];
+  if (BASE[cat].indexOf(v) < 0 && pref.voci[cat].indexOf(v) < 0) pref.voci[cat].push(v);
+  salvaPref();
+}
+function scorda(cat, v){
+  if (pref.voci && pref.voci[cat]) pref.voci[cat] = pref.voci[cat].filter(x => x !== v);
+  salvaPref();
+}
 
 function settimanaDi(iso, gruppo){
   const p = piano.filter(r => r.g === gruppo).find(r => iso >= r.i && iso <= r.f);
@@ -539,12 +608,12 @@ function settimanaDi(iso, gruppo){
 const serieDi = (gruppo, da, a) => serie.filter(s => s.g===gruppo && s.d>=da && s.d<=a);
 
 function sommaZone(lista){
-  const z = {en1:0,tec:0,en2:0,en3:0,sp:0};
+  const z = {}; voci("zona").forEach(k => z[k] = 0);
   lista.forEach(s => { z[s.z] = (z[s.z]||0) + metriDi(s); });
   return z;
 }
 function sommaStili(lista){
-  const t = {sl:0,do:0,ra:0,fa:0,mx:0};
+  const t = {}; voci("stile").forEach(k => t[k] = 0);
   lista.forEach(s => { t[s.s] = (t[s.s]||0) + metriDi(s); });
   return t;
 }
@@ -565,7 +634,21 @@ ATTREZZI.forEach(a => V_ATTR[a.toLowerCase()] = a);
 V_ATTR["sculling"] = "scull"; V_ATTR["scull"] = "scull"; V_ATTR["tubo"] = "tubo";
 V_ATTR["drag"] = "drag"; V_ATTR["ubk"] = "UDK"; V_ATTR["udk"] = "UDK";
 
+// le voci aggiunte a mano diventano parole riconosciute anche in modalità testo
+function vocabolario(base, cat){
+  const v = Object.assign({}, base);
+  voci(cat).forEach(id => {
+    const k = String(id).toLowerCase();
+    if (v[k] === undefined) v[k] = id;
+  });
+  return v;
+}
+
 function leggiRiga(riga){
+  const V_S = vocabolario(V_STILE, "stile"),
+        V_Z = vocabolario(V_ZONA, "zona"),
+        V_B = vocabolario(V_BLOCCO, "blocco"),
+        V_A = vocabolario(V_ATTR, "attr");
   let t = riga.trim(); if(!t || t.startsWith("#")) return null;
   t = t.replace(/(\d)\.(\d{3})\b/g, "$1$2");
   let rip = 1, dist = 0;
@@ -576,16 +659,35 @@ function leggiRiga(riga){
   if (!dist) return null;
   const r = {r:rip, m:dist, s:"sl", z:"en1", b:"main", a:[], p:"", n:""};
   let vistoZona = false, vistoBlocco = false, vistoStile = false, note = [];
+
+  // le voci di più parole vanno riconosciute prima di spezzare la riga sugli spazi
+  [["attr",V_A],["stile",V_S],["zona",V_Z],["blocco",V_B]].forEach(coppia => {
+    const cat = coppia[0], voc = coppia[1];
+    Object.keys(voc).filter(k => k.indexOf(" ") > 0)
+      .sort((a,b) => b.length - a.length)
+      .forEach(k => {
+        const i = t.toLowerCase().indexOf(k);
+        if (i < 0) return;
+        const val = voc[k];
+        if (cat === "attr") r.a.push(val);
+        else if (cat === "stile" && !vistoStile){ r.s = val; vistoStile = true; }
+        else if (cat === "zona" && !vistoZona){ r.z = val; vistoZona = true; }
+        else if (cat === "blocco" && !vistoBlocco){ r.b = val; vistoBlocco = true; }
+        else return;
+        t = t.slice(0, i) + " " + t.slice(i + k.length);
+      });
+  });
+
   t.split(/[\s,;]+/).filter(Boolean).forEach(tok => {
     const k = tok.toLowerCase().replace(/[.]$/,"");
     if (/^p?\d{1,2}[:'.]\d{2}"?$/.test(k)){ r.p = k.replace(/^p/,""); return; }
-    if (V_STILE[k] !== undefined && !vistoStile){ r.s = V_STILE[k]; vistoStile = true; return; }
-    if (V_ZONA[k] !== undefined && !vistoZona){
-      r.z = V_ZONA[k]; vistoZona = true;
+    if (V_S[k] !== undefined && !vistoStile){ r.s = V_S[k]; vistoStile = true; return; }
+    if (V_Z[k] !== undefined && !vistoZona){
+      r.z = V_Z[k]; vistoZona = true;
       if (k === "tec" && !vistoBlocco){ r.b = "tec"; vistoBlocco = true; }
       return; }
-    if (V_BLOCCO[k] !== undefined && !vistoBlocco){ r.b = V_BLOCCO[k]; vistoBlocco = true; return; }
-    if (V_ATTR[k] !== undefined){ r.a.push(V_ATTR[k]); return; }
+    if (V_B[k] !== undefined && !vistoBlocco){ r.b = V_B[k]; vistoBlocco = true; return; }
+    if (V_A[k] !== undefined){ r.a.push(V_A[k]); return; }
     note.push(tok);
   });
   if (r.a.includes("scull") && !vistoZona) r.z = "tec";
@@ -606,9 +708,9 @@ function spostaSettimana(giorni){
   disegnaSettimana();
 }
 
-function chips(cont, voci, attivo, click, cls){
+function chips(cont, elenco, attivo, click, cls, agg){
   cont.innerHTML = "";
-  voci.forEach(v => {
+  elenco.forEach(v => {
     const b = document.createElement("button");
     b.className = "chip " + (cls||"");
     b.textContent = v.et;
@@ -618,29 +720,78 @@ function chips(cont, voci, attivo, click, cls){
     b.onclick = () => { click(v.val); };
     cont.appendChild(b);
   });
+  if (!agg) return;
+
+  const piu = document.createElement("button");
+  piu.className = "chip aggiungi-voce " + (cls||"");
+  piu.textContent = "+";
+  piu.title = agg.titolo || "Aggiungi una voce mia";
+  piu.setAttribute("aria-label", agg.titolo || "Aggiungi una voce mia");
+  cont.appendChild(piu);
+
+  const riga = document.createElement("div");
+  riga.className = "nuova-voce"; riga.hidden = true;
+  const campo = document.createElement("input");
+  campo.type = agg.numero ? "number" : "text";
+  campo.placeholder = agg.esempio || "";
+  if (agg.numero) campo.min = "1";
+  const ok = document.createElement("button");
+  ok.className = "chip piccolo"; ok.textContent = "Aggiungi";
+  riga.append(campo, ok);
+  cont.appendChild(riga);
+
+  const conferma = () => {
+    let v = campo.value.trim();
+    if (!v) return;
+    if (agg.numero){ v = parseInt(v, 10); if (!v || v < 1) return; }
+    else if (v.length > 14) v = v.slice(0, 14);
+    agg.su(v);
+  };
+  piu.onclick = () => { riga.hidden = false; campo.focus(); };
+  ok.onclick = conferma;
+  campo.onkeydown = e => { if (e.key === "Enter"){ e.preventDefault(); conferma(); } };
 }
 
 function disegnaForm(){
+  const rinfresca = () => { disegnaForm(); anteprima(); };
+
   chips(document.getElementById("c-rip"),
-    [1,2,3,4,5,6,8,10,12,16,20].map(n => ({val:n, et:"×"+n})),
-    v => bozza.r === v, v => { bozza.r = v; disegnaForm(); anteprima(); }, "piccolo");
+    voci("rip").map(n => ({val:n, et:etichetta("rip", n)})),
+    v => bozza.r === v, v => { bozza.r = v; rinfresca(); }, "piccolo",
+    {numero:true, esempio:"24", titolo:"Aggiungi un numero di ripetizioni",
+     su: v => { ricorda("rip", v); bozza.r = v; rinfresca(); }});
+
   chips(document.getElementById("c-dist"),
-    [25,50,75,100,150,200,300,400,500,800,1000,1500].map(n => ({val:n, et:n})),
-    v => bozza.m === v, v => { bozza.m = (bozza.m===v?0:v); disegnaForm(); anteprima(); });
+    voci("dist").map(n => ({val:n, et:String(n)})),
+    v => bozza.m === v, v => { bozza.m = (bozza.m===v?0:v); rinfresca(); }, "",
+    {numero:true, esempio:"175", titolo:"Aggiungi una distanza",
+     su: v => { ricorda("dist", v); bozza.m = v; rinfresca(); }});
+
   chips(document.getElementById("c-stile"),
-    STILI.map(([id,et]) => ({val:id, et, col:colStile(id)})),
-    v => bozza.s === v, v => { bozza.s = v; disegnaForm(); anteprima(); });
+    voci("stile").map(id => ({val:id, et:etichetta("stile", id), col:colStile(id)})),
+    v => bozza.s === v, v => { bozza.s = v; rinfresca(); }, "",
+    {esempio:"SL/DO", titolo:"Aggiungi uno stile",
+     su: v => { ricorda("stile", v); bozza.s = v; rinfresca(); }});
+
   chips(document.getElementById("c-zona"),
-    ZONE.map(([id,et]) => ({val:id, et, col:colZona(id)})),
-    v => bozza.z === v, v => { bozza.z = v; disegnaForm(); anteprima(); }, "z");
+    voci("zona").map(id => ({val:id, et:etichetta("zona", id), col:colZona(id)})),
+    v => bozza.z === v, v => { bozza.z = v; rinfresca(); }, "z",
+    {esempio:"Sp1", titolo:"Aggiungi una zona",
+     su: v => { ricorda("zona", v); bozza.z = v; rinfresca(); }});
+
   chips(document.getElementById("c-blocco"),
-    BLOCCHI.map(([id,et]) => ({val:id, et})),
-    v => bozza.b === v, v => { bozza.b = v; disegnaForm(); anteprima(); }, "piccolo");
+    voci("blocco").map(id => ({val:id, et:etichetta("blocco", id)})),
+    v => bozza.b === v, v => { bozza.b = v; rinfresca(); }, "piccolo",
+    {esempio:"Subacquee", titolo:"Aggiungi un blocco",
+     su: v => { ricorda("blocco", v); bozza.b = v; rinfresca(); }});
+
   chips(document.getElementById("c-attr"),
-    ATTREZZI.map(a => ({val:a, et:a})),
+    voci("attr").map(a => ({val:a, et:a})),
     v => bozza.a.includes(v),
-    v => { const i = bozza.a.indexOf(v); i<0 ? bozza.a.push(v) : bozza.a.splice(i,1);
-           disegnaForm(); anteprima(); }, "piccolo");
+    v => { const i = bozza.a.indexOf(v); i<0 ? bozza.a.push(v) : bozza.a.splice(i,1); rinfresca(); },
+    "piccolo",
+    {esempio:"drag socks", titolo:"Aggiungi un attrezzo",
+     su: v => { ricorda("attr", v); if (!bozza.a.includes(v)) bozza.a.push(v); rinfresca(); }});
 }
 
 function descrizione(s){
@@ -714,13 +865,14 @@ function disegnaSeduta(){
   const z = sommaZone(lista), tot = totale(lista);
   document.getElementById("totale-seduta").textContent = fmt(tot) + " m";
   document.getElementById("riepilogo-seduta").textContent = lista.length
-    ? ZONE.filter(([id]) => z[id] > 0).map(([id,et]) => et + " " + fmt(z[id])).join("  ·  ")
+    ? voci("zona").filter(id => z[id] > 0).map(id => nomeZona(id) + " " + fmt(z[id])).join("  ·  ")
     : "nessuna serie";
 }
 
 // vista di lettura: le serie raggruppate per blocco, niente comandi
 function schedaSeduta(lista, ul){
-  BLOCCHI.forEach(([bid, nome]) => {
+  voci("blocco").forEach(bid => {
+    const nome = nomeBlocco(bid);
     const gruppo = lista.filter(s => s.b === bid);
     if (!gruppo.length) return;
     const testa = document.createElement("li");
@@ -778,7 +930,7 @@ function disegnaSettimana(){
   corsia.innerHTML = '<div class="traguardo"></div>';
   const scala = Math.max(target, mFatti + mProg, 1);
   const zf = sommaZone(fatte);
-  ZONE.forEach(([id]) => {
+  voci("zona").forEach(id => {
     if (zf[id] > 0){
       const i = document.createElement("i");
       i.style.width = (zf[id]/scala*100) + "%"; i.style.background = colZona(id);
@@ -828,7 +980,7 @@ function disegnaSettimana(){
     const pila = document.createElement("div");
     pila.className = "pila";
     pila.style.height = (x.tot/maxG*100) + "%";
-    ZONE.forEach(([id]) => {
+    voci("zona").forEach(id => {
       if (x.zone[id] > 0){
         const i = document.createElement("i");
         i.style.height = (x.zone[id]/x.tot*100) + "%";
@@ -847,13 +999,15 @@ function disegnaSettimana(){
   const tb = document.getElementById("w-zone");
   tb.innerHTML = "";
   const pianoZ = {en1:w.e1, tec:w.tc, en2:w.e2, en3:w.e3, sp:w.sp};
-  ZONE.forEach(([id,et]) => {
+  voci("zona").forEach(id => {
+    const et = nomeZona(id), atteso = pianoZ[id] || 0;
+    if (!zf[id] && !atteso) return;          // una zona mai usata non sporca la tabella
     const tr = document.createElement("tr");
-    const dif = zf[id] - pianoZ[id];
+    const dif = zf[id] - atteso;
     const perc = mFatti ? (zf[id]/mFatti*100) : 0;
     tr.innerHTML =
       '<td><span class="pallino" style="background:'+colZona(id)+'"></span>'+et+'</td>' +
-      '<td>'+fmt(zf[id])+'</td><td style="color:var(--tenue)">'+fmt(pianoZ[id])+'</td>' +
+      '<td>'+fmt(zf[id]||0)+'</td><td style="color:var(--tenue)">'+fmt(atteso)+'</td>' +
       '<td class="'+(dif>=0?"delta-ok":"delta-neg")+'">'+(dif>=0?"+":"")+fmt(dif)+'</td>' +
       '<td>'+perc.toFixed(0)+'%</td>';
     tb.appendChild(tr);
@@ -864,7 +1018,8 @@ function disegnaSettimana(){
   const barra = document.getElementById("w-stili-barra"), leg = document.getElementById("w-stili-legenda");
   barra.innerHTML = ""; leg.innerHTML = "";
   if (totS){
-    STILI.forEach(([id,et]) => {
+    voci("stile").forEach(id => {
+      const et = nomeStile(id);
       if (st[id] > 0){
         const i = document.createElement("i");
         i.style.width = (st[id]/totS*100) + "%"; i.style.background = colStile(id);
@@ -925,8 +1080,9 @@ function disegnaStagione(){
   const z = sommaZone(tutte), tot = fattoTot;
   const barra = document.getElementById("s-zone-barra"), leg = document.getElementById("s-zone-legenda");
   barra.innerHTML = ""; leg.innerHTML = "";
-  const energetici = tot - z.tec;
-  ZONE.forEach(([id,et]) => {
+  const energetici = tot - (z.tec || 0);
+  voci("zona").forEach(id => {
+    const et = nomeZona(id);
     if (z[id] > 0 && tot){
       const i = document.createElement("i");
       i.style.width = (z[id]/tot*100) + "%"; i.style.background = colZona(id);
@@ -961,8 +1117,8 @@ function disegnaStagione(){
     const scala = Math.max(w.t, f, 1);
     const li = document.createElement("li");
     if (oggi >= w.i && oggi <= w.f) li.className = "corrente";
-    const barre = ZONE.filter(([id]) => zz[id] > 0)
-      .map(([id]) => '<i style="width:' + (zz[id]/scala*100) + '%;background:' + colZona(id) + '"></i>').join("");
+    const barre = voci("zona").filter(id => zz[id] > 0)
+      .map(id => '<i style="width:' + (zz[id]/scala*100) + '%;background:' + colZona(id) + '"></i>').join("");
     li.innerHTML =
       '<span class="w">' + w.w + '</span>' +
       '<span class="mini"><span class="piano" style="width:' + (w.t/scala*100) + '%"></span>' +
@@ -974,8 +1130,35 @@ function disegnaStagione(){
 }
 
 /* ============ dati ============ */
+function disegnaVoci(){
+  const cont = document.getElementById("elenco-voci");
+  cont.innerHTML = "";
+  const nomi = {rip:"Ripetizioni", dist:"Distanze", stile:"Stili", zona:"Zone",
+                blocco:"Blocchi", attr:"Attrezzi"};
+  let vuoto = true;
+  Object.keys(nomi).forEach(cat => {
+    const mie = (pref.voci && pref.voci[cat]) || [];
+    if (!mie.length) return;
+    vuoto = false;
+    const et = document.createElement("div");
+    et.className = "etichetta"; et.textContent = nomi[cat];
+    const riga = document.createElement("div"); riga.className = "chips";
+    mie.forEach(v => {
+      const b = document.createElement("button");
+      b.className = "chip piccolo";
+      b.innerHTML = etichetta(cat, v) + ' <span style="color:var(--tenue)">✕</span>';
+      b.title = "Togli " + v;
+      b.onclick = () => { scorda(cat, v); disegnaVoci(); disegnaForm(); disegnaTutto(); };
+      riga.appendChild(b);
+    });
+    cont.append(et, riga);
+  });
+  if (vuoto) cont.innerHTML = '<span class="vuoto">Nessuna voce aggiunta: per ora usi solo quelle di partenza.</span>';
+}
+
 function disegnaDati(){
   const g = pref.gruppo;
+  disegnaVoci();
   const n = serie.filter(s => s.g === g).length;
   document.getElementById("d-stato").textContent =
     (Memoria.disponibile ? "Salvataggio automatico su questo dispositivo attivo. " : "Salvataggio del browser non disponibile. ") +
@@ -1037,6 +1220,7 @@ function applicaRuolo(){
   document.querySelector('#nav button[data-vista="v-oggi"]').hidden = sola;
   document.getElementById("sez-piano").hidden = sola;
   document.getElementById("sez-azzera").hidden = sola;
+  document.getElementById("sez-voci").hidden = sola;
   document.getElementById("zona-inserimento").hidden = sola;
   document.getElementById("campo-stato").hidden = sola;
   document.getElementById("w-agg").hidden = !sync.url;
