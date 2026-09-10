@@ -148,7 +148,13 @@ textarea{min-height:132px; line-height:1.55; resize:vertical; font-family:ui-mon
 .serie li.lettura .desc small{font-size:14.5px; color:var(--tenue)}
 .serie li.lettura .mt{font-size:18px; color:var(--tenue)}
 .testa-seduta{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:9px}
-.testa-seduta h2{font-size:15px; font-weight:600; color:var(--tenue); letter-spacing:.06em}
+.testa-seduta h2{font-size:15px; font-weight:600; color:var(--tenue); letter-spacing:.06em; flex:1}
+.torna{border:1px solid var(--bordo); background:transparent; color:var(--tile); border-radius:9px;
+  padding:7px 12px; font-family:var(--f-disp); font-size:15px; font-weight:600; flex:none}
+.riepilogo-stili{margin-top:7px; color:var(--tenue); font-size:13.5px}
+.giorno{cursor:pointer}
+.giorno:hover .pila, .giorno:focus-visible .pila{outline:1px solid var(--bordo)}
+.giorno.oggi .pila{box-shadow:inset 0 0 0 1px rgba(255,255,255,.25)}
 .blocco-testa{display:flex; justify-content:space-between; align-items:baseline;
   margin:16px 0 2px; padding-top:12px; border-top:1px solid rgba(255,255,255,.14);
   font-family:var(--f-disp); font-size:14px; color:var(--tenue); letter-spacing:.05em}
@@ -279,6 +285,7 @@ def 1x300 mx en1"></textarea>
 
     <div class="sez">
       <div class="testa-seduta">
+        <button class="torna" id="torna" hidden>‹ Settimana</button>
         <h2 id="titolo-seduta" style="margin:0">Seduta</h2>
         <span class="frecce">
           <button id="g-prec" aria-label="Giorno precedente">‹</button>
@@ -291,6 +298,7 @@ def 1x300 mx en1"></textarea>
           <span style="color:var(--tenue); font-size:14px" id="riepilogo-seduta">nessuna serie</span>
           <span class="n" id="totale-seduta">0 m</span>
         </div>
+        <div class="riepilogo-stili" id="riepilogo-stili"></div>
       </div>
     </div>
   </section>
@@ -867,6 +875,11 @@ function disegnaSeduta(){
   document.getElementById("riepilogo-seduta").textContent = lista.length
     ? voci("zona").filter(id => z[id] > 0).map(id => nomeZona(id) + " " + fmt(z[id])).join("  ·  ")
     : "nessuna serie";
+  const st = sommaStili(lista);
+  document.getElementById("riepilogo-stili").textContent = tot
+    ? voci("stile").filter(id => st[id] > 0)
+        .map(id => nomeStile(id) + " " + Math.round(st[id]/tot*100) + "%").join("  ·  ")
+    : "";
 }
 
 // vista di lettura: le serie raggruppate per blocco, niente comandi
@@ -977,6 +990,10 @@ function disegnaSettimana(){
   perGiorno.forEach(x => {
     const div = document.createElement("div");
     div.className = "giorno" + (x.iso === oggiISO() ? " oggi" : "");
+    div.setAttribute("role", "button");
+    div.tabIndex = 0;
+    div.onclick = () => apriGiorno(x.iso);
+    div.onkeydown = e => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); apriGiorno(x.iso); } };
     const pila = document.createElement("div");
     pila.className = "pila";
     pila.style.height = (x.tot/maxG*100) + "%";
@@ -991,7 +1008,8 @@ function disegnaSettimana(){
     const sm = document.createElement("small");
     sm.innerHTML = GIORNI[gg(x.iso)] + "<br>" + (x.tot ? fmt(x.tot/1000).replace(",",".") : "–");
     div.append(pila, sm);
-    div.title = dataBreve(x.iso) + ": " + fmt(x.tot) + " m";
+    div.title = dataBreve(x.iso) + ": " + fmt(x.tot) + " m — apri la seduta";
+    div.setAttribute("aria-label", "Apri la seduta di " + dataBreve(x.iso) + ", " + fmt(x.tot) + " metri");
     cont.appendChild(div);
   });
 
@@ -1222,6 +1240,7 @@ function applicaRuolo(){
   document.getElementById("sez-azzera").hidden = sola;
   document.getElementById("sez-voci").hidden = sola;
   document.getElementById("zona-inserimento").hidden = sola;
+  document.getElementById("torna").hidden = !sola;
   document.getElementById("campo-stato").hidden = sola;
   document.getElementById("w-agg").hidden = !sync.url;
   if (sola && document.getElementById("v-oggi").classList.contains("attiva")) vaiA("v-settimana");
@@ -1285,6 +1304,18 @@ function disegnaGruppi(){
   });
 }
 
+// dalla settimana al giorno, e ritorno: anche col gesto indietro,
+// che in un'app aggiunta alla schermata Home è l'unico che il telefono offre
+function apriGiorno(iso){
+  document.getElementById("data").value = iso;
+  disegnaTutto();
+  vaiA("v-oggi");
+  try { history.pushState({v:"giorno"}, ""); } catch(e){}
+}
+window.addEventListener("popstate", () => {
+  if (document.getElementById("v-oggi").classList.contains("attiva")) vaiA("v-settimana");
+});
+
 function vaiA(id){
   document.querySelectorAll("#nav button").forEach(x =>
     x.setAttribute("aria-pressed", x.dataset.vista === id ? "true" : "false"));
@@ -1303,6 +1334,10 @@ function spostaGiorno(n){
   c.value = d.toISOString().slice(0,10);
   dataW = null; disegnaTutto();
 }
+document.getElementById("torna").onclick = () => {
+  if (history.state && history.state.v === "giorno") history.back();
+  else vaiA("v-settimana");
+};
 document.getElementById("g-prec").onclick = () => spostaGiorno(-1);
 document.getElementById("g-succ").onclick = () => spostaGiorno(1);
 document.getElementById("w-prec").onclick = () => spostaSettimana(-7);
