@@ -62,6 +62,8 @@ main{padding:0 14px 24px; max-width:720px; margin:0 auto}
 .frecce{display:flex; gap:4px; flex:none}
 .frecce button{width:38px; height:38px; border-radius:9px; border:1px solid var(--bordo);
   background:transparent; color:var(--tile); font-family:var(--f-disp); font-size:20px; line-height:1}
+.frecce #copia{width:auto; padding:0 12px; font-size:15px; font-weight:600}
+.frecce #copia.fatto{background:var(--tile); color:var(--vasca); border-color:var(--tile)}
 .cifra{display:flex; align-items:baseline; gap:8px; margin:10px 0 12px}
 .cifra .grande{font-size:52px; line-height:.9}
 .cifra .su{color:var(--tenue); font-size:20px}
@@ -304,6 +306,7 @@ def 1x300 mx en1"></textarea>
         <span class="frecce">
           <button id="g-prec" aria-label="Giorno precedente">‹</button>
           <button id="g-succ" aria-label="Giorno successivo">›</button>
+          <button id="copia" title="Copia la seduta in formato testo">Copia</button>
         </span>
       </div>
       <div class="pannello">
@@ -921,6 +924,40 @@ function disegnaSeduta(){
 }
 
 // vista di lettura: le serie raggruppate per blocco, niente comandi
+// il percorso inverso del parser: dalle serie registrate alla notazione testuale
+function serieARiga(s){
+  const p = [s.b, s.r + "x" + s.m, s.s, s.z];
+  (s.a || []).forEach(a => p.push(a));
+  if (s.p) p.push("p" + s.p);
+  if (s.n) p.push(s.n);
+  return p.join(" ");
+}
+
+function sedutaATesto(lista){
+  const d = document.getElementById("data").value;
+  const nome = (GRUPPI.filter(x => x.id === pref.gruppo)[0] || {}).nome || pref.gruppo;
+  const giorno = d.slice(8,10) + "/" + d.slice(5,7) + "/" + d.slice(0,4);
+  return "# " + giorno + " - " + nome + " - " + fmt(totale(lista)) + " m\n" +
+         lista.map(serieARiga).join("\n");
+}
+
+function copiaNegliAppunti(testo, poi){
+  const ripiego = () => {
+    try {
+      const t = document.createElement("textarea");
+      t.value = testo; t.setAttribute("readonly", "");
+      t.style.position = "fixed"; t.style.top = "-1000px";
+      document.body.appendChild(t);
+      t.select(); t.setSelectionRange(0, t.value.length);
+      const ok = document.execCommand("copy");
+      t.remove(); poi(ok);
+    } catch(e){ poi(false); }
+  };
+  if (navigator.clipboard && window.isSecureContext)
+    navigator.clipboard.writeText(testo).then(() => poi(true), ripiego);
+  else ripiego();
+}
+
 // lo scambio riscrive l'ordine di tutta la seduta, così non resta mai ambiguo
 function spostaSerie(lista, i, verso){
   const j = i + verso;
@@ -1540,6 +1577,18 @@ function spostaGiorno(n){
 document.getElementById("torna").onclick = () => {
   if (history.state && history.state.v === "giorno") history.back();
   else vaiA("v-settimana");
+};
+document.getElementById("copia").onclick = function(){
+  const d = document.getElementById("data").value;
+  const lista = serie.filter(x => x.d === d && x.g === pref.gruppo)
+    .sort((a,b) => ((a.o||0) - (b.o||0)) || ((a.ts||0) - (b.ts||0)));
+  const b = this;
+  if (!lista.length){ b.textContent = "Vuota"; setTimeout(() => b.textContent = "Copia", 1400); return; }
+  copiaNegliAppunti(sedutaATesto(lista), ok => {
+    b.textContent = ok ? "Copiata" : "Non riesco";
+    b.classList.toggle("fatto", ok);
+    setTimeout(() => { b.textContent = "Copia"; b.classList.remove("fatto"); }, 1600);
+  });
 };
 document.getElementById("g-prec").onclick = () => spostaGiorno(-1);
 document.getElementById("g-succ").onclick = () => spostaGiorno(1);

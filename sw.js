@@ -2,7 +2,7 @@
 /* Vasca — copia offline dell'app.
    Cambia VERSIONE ogni volta che aggiorni index.html, altrimenti i telefoni
    continuano ad aprire la copia vecchia. */
-const VERSIONE = 'vasca-7';
+const VERSIONE = 'vasca-8';
 const FILE = ['./', './index.html', './manifest.json',
               './icon-180.png', './icon-192.png', './icon-512.png'];
 
