@@ -234,6 +234,8 @@ nav button[aria-pressed="true"]{color:var(--tile); box-shadow:inset 0 2px 0 var(
       </div>
 
       <div class="pannello" id="form-serie">
+        <div class="etichetta">Giri — quante volte si ripete la serie</div>
+        <div class="chips" id="c-giri"></div>
         <div class="etichetta">Ripetizioni</div>
         <div class="chips" id="c-rip"></div>
         <div class="etichetta">Distanza</div>
@@ -280,7 +282,8 @@ def 1x300 mx en1"></textarea>
         <div class="azioni">
           <button class="primario" id="aggiungi-testo" disabled>Aggiungi le serie</button>
         </div>
-        <p class="nota">Riconosce stile (sl do ra fa mx), zona (en1 tec en2 en3 sp), blocco (wu tec pre main comp def),
+        <p class="nota">Per ripetere una serie più volte: <code>2x(5x100 sl en2 p1:30)</code> oppure <code>2x5x100 sl en2</code>.
+          Riconosce stile (sl do ra fa mx), zona (en1 tec en2 en3 sp), blocco (wu tec pre main comp def),
           attrezzi (gambe pull palette pinne snorkel paracadute tavola elastico scull drill build) e partenza (p2:36).
           Il resto della riga finisce nelle note.</p>
       </div>
@@ -563,7 +566,8 @@ const oggiISO = () => { const d = new Date(); d.setMinutes(d.getMinutes()-d.getT
 const gg = iso => { const d = new Date(iso+"T12:00:00"); return (d.getDay()+6)%7; };
 const dataBreve = iso => { const d = new Date(iso+"T12:00:00");
   return d.getDate()+" "+["gen","feb","mar","apr","mag","giu","lug","ago","set","ott","nov","dic"][d.getMonth()]; };
-const metriDi = s => s.r * s.m;
+const giriDi  = s => (s.gi && s.gi > 1) ? s.gi : 1;
+const metriDi = s => giriDi(s) * s.r * s.m;
 const nomeZona  = z => (ZONE.find(x => x[0]===z)||["",z])[1];
 const nomeStile = s => (STILI.find(x => x[0]===s)||["",s])[1];
 const nomeBlocco= b => (BLOCCHI.find(x => x[0]===b)||["",b])[1];
@@ -586,6 +590,7 @@ const colStile = s => coloreVar(s);
 // voci disponibili per categoria: le mie di partenza, quelle aggiunte a mano,
 // e quelle che compaiono nelle serie (così arrivano anche dagli altri dispositivi)
 const BASE = {
+  giri: [1,2,3,4,5,6,8,10],
   rip:  [1,2,3,4,5,6,8,10,12,16,20],
   dist: [25,50,75,100,150,200,300,400,500,800,1000,1500],
   stile: STILI.map(x => x[0]),
@@ -604,7 +609,7 @@ function voci(cat){
   BASE[cat].concat(mie, dalDato).forEach(v => {
     if (v !== undefined && v !== null && v !== "" && fuori.indexOf(v) < 0) fuori.push(v);
   });
-  if (cat === "rip" || cat === "dist") fuori.sort((a,b) => a - b);
+  if (cat === "rip" || cat === "dist" || cat === "giri") fuori.sort((a,b) => a - b);
   return fuori;
 }
 function etichetta(cat, v){
@@ -681,13 +686,30 @@ function leggiRiga(riga){
         V_A = vocabolario(V_ATTR, "attr");
   let t = riga.trim(); if(!t || t.startsWith("#")) return null;
   t = t.replace(/(\d)\.(\d{3})\b/g, "$1$2");
-  let rip = 1, dist = 0;
-  const mult = t.match(/(\d+)\s*[x×*]\s*(\d+)/i);
-  if (mult){ rip = +mult[1]; dist = +mult[2]; t = t.replace(mult[0], " "); }
+  let giri = 1, rip = 1, dist = 0;
+  // giri scritti come "3x(4x100 ...)": tolgo "3x(" e la parentesi che la chiude
+  const conParentesi = t.match(/(\d+)\s*[x×*]\s*\(/i);
+  if (conParentesi){
+    giri = +conParentesi[1];
+    // la parentesi da togliere è quella che chiude "Nx(", contando quelle aperte dentro
+    const aperta = conParentesi.index + conParentesi[0].length - 1;
+    let prof = 0, chiusa = -1;
+    for (let i = aperta; i < t.length; i++){
+      if (t[i] === "(") prof++;
+      else if (t[i] === ")"){ prof--; if (prof === 0){ chiusa = i; break; } }
+    }
+    if (chiusa >= 0) t = t.slice(0, chiusa) + " " + t.slice(chiusa + 1);
+    t = t.slice(0, conParentesi.index) + " " + t.slice(aperta + 1);
+  }
+  // oppure in forma compatta "3x4x100"
+  const tripla = !conParentesi && t.match(/(\d+)\s*[x×*]\s*(\d+)\s*[x×*]\s*(\d+)/i);
+  const mult = tripla ? null : t.match(/(\d+)\s*[x×*]\s*(\d+)/i);
+  if (tripla){ giri = +tripla[1]; rip = +tripla[2]; dist = +tripla[3]; t = t.replace(tripla[0], " "); }
+  else if (mult){ rip = +mult[1]; dist = +mult[2]; t = t.replace(mult[0], " "); }
   else { const solo = t.match(/(?:^|\s)(\d{2,4})(?=\s|$)/); if(!solo) return null;
          dist = +solo[1]; t = t.replace(solo[0], " "); }
   if (!dist) return null;
-  const r = {r:rip, m:dist, s:"sl", z:"en1", b:"main", a:[], p:"", n:""};
+  const r = {gi:giri, r:rip, m:dist, s:"sl", z:"en1", b:"main", a:[], p:"", n:""};
   let vistoZona = false, vistoBlocco = false, vistoStile = false, note = [];
 
   // le voci di più parole vanno riconosciute prima di spezzare la riga sugli spazi
@@ -737,7 +759,8 @@ function leggiRiga(riga){
 const leggiTesto = txt => txt.split(/\n/).map(leggiRiga).filter(Boolean);
 
 /* ============ stato del modulo ============ */
-let bozza = {r:1, m:0, s:"sl", z:"en1", b:"main", a:[]};
+const nuovaBozza = () => ({gi:1, r:1, m:0, s:"sl", z:"en1", b:"main", a:[]});
+let bozza = nuovaBozza();
 let inModifica = null;   // id della serie aperta in modifica, se ce n'è una
 let dataW = null;   // settimana in consultazione, indipendente dalla data della seduta
 const dataSettimana = () => dataW || document.getElementById("data").value;
@@ -795,6 +818,12 @@ function chips(cont, elenco, attivo, click, cls, agg){
 function disegnaForm(){
   const rinfresca = () => { disegnaForm(); anteprima(); };
 
+  chips(document.getElementById("c-giri"),
+    voci("giri").map(n => ({val:n, et:String(n)})),
+    v => (bozza.gi || 1) === v, v => { bozza.gi = v; rinfresca(); }, "piccolo",
+    {numero:true, esempio:"12", titolo:"Aggiungi un numero di giri",
+     su: v => { ricorda("giri", v); bozza.gi = v; rinfresca(); }});
+
   chips(document.getElementById("c-rip"),
     voci("rip").map(n => ({val:n, et:etichetta("rip", n)})),
     v => bozza.r === v, v => { bozza.r = v; rinfresca(); }, "piccolo",
@@ -836,7 +865,8 @@ function disegnaForm(){
 
 function descrizione(s){
   const p = [];
-  if (s.r > 1) p.push(s.r + "×" + s.m); else p.push(String(s.m));
+  const base = s.r > 1 ? s.r + "×" + s.m : String(s.m);
+  p.push(giriDi(s) > 1 ? giriDi(s) + "×(" + base + ")" : base);
   p.push(nomeStile(s.s)); p.push(nomeZona(s.z));
   return p.join(" ");
 }
@@ -853,7 +883,7 @@ function dettaglio(s, senzaBlocco){
 function anteprima(){
   const ok = bozza.m > 0;
   document.getElementById("prev-testo").textContent = ok ? descrizione(bozza) : "—";
-  document.getElementById("prev-metri").textContent = fmt(ok ? bozza.r*bozza.m : 0) + " m";
+  document.getElementById("prev-metri").textContent = fmt(ok ? metriDi(bozza) : 0) + " m";
   const b = document.getElementById("aggiungi");
   b.textContent = inModifica ? "Salva modifica" : "Aggiungi serie";
   b.disabled = !ok;
@@ -862,7 +892,7 @@ function anteprima(){
 
 function apriModifica(s){
   inModifica = s.id;
-  bozza = {r:s.r, m:s.m, s:s.s, z:s.z, b:s.b, a:(s.a || []).slice()};
+  bozza = {gi:giriDi(s), r:s.r, m:s.m, s:s.s, z:s.z, b:s.b, a:(s.a || []).slice()};
   document.getElementById("nota").value = s.n || "";
   document.getElementById("partenza").value = s.p || "";
   document.getElementById("stato").value = s.f === 0 ? "0" : "1";
@@ -873,7 +903,7 @@ function apriModifica(s){
 
 function chiudiModifica(){
   inModifica = null;
-  bozza = {r:1, m:0, s:"sl", z:"en1", b:"main", a:[]};
+  bozza = nuovaBozza();
   document.getElementById("nota").value = "";
   document.getElementById("partenza").value = "";
   disegnaForm(); anteprima(); disegnaSeduta();
@@ -882,7 +912,7 @@ function chiudiModifica(){
 function salvaModifica(){
   const s = serie.filter(x => x.id === inModifica)[0];
   if (!s) return chiudiModifica();
-  s.r = bozza.r; s.m = bozza.m; s.s = bozza.s; s.z = bozza.z; s.b = bozza.b;
+  s.gi = bozza.gi || 1; s.r = bozza.r; s.m = bozza.m; s.s = bozza.s; s.z = bozza.z; s.b = bozza.b;
   s.a = bozza.a.slice();
   s.p = document.getElementById("partenza").value.trim();
   s.n = document.getElementById("nota").value.trim();
@@ -890,7 +920,7 @@ function salvaModifica(){
   s.ts = Date.now();            // la modifica vince sul foglio alla prossima sincronizzazione
   salvaSerie();
   inModifica = null;
-  bozza = {r:1, m:0, s:"sl", z:"en1", b:"main", a:[]};
+  bozza = nuovaBozza();
   document.getElementById("nota").value = "";
   document.getElementById("partenza").value = "";
   disegnaForm(); anteprima(); disegnaTutto();
@@ -898,7 +928,7 @@ function salvaModifica(){
 
 function anteprimaTesto(){
   const righe = leggiTesto(document.getElementById("testo").value);
-  const m = righe.reduce((a,r) => a + r.r*r.m, 0);
+  const m = righe.reduce((a,r) => a + metriDi(r), 0);
   document.getElementById("prevt-testo").textContent =
     righe.length ? righe.length + (righe.length===1 ? " serie" : " serie") : "—";
   document.getElementById("prevt-metri").textContent = fmt(m) + " m";
@@ -978,7 +1008,7 @@ function disegnaSeduta(){
 // vista di lettura: le serie raggruppate per blocco, niente comandi
 // il percorso inverso del parser: dalle serie registrate alla notazione testuale
 function serieARiga(s){
-  const p = [s.b, s.r + "x" + s.m, s.s, s.z];
+  const p = [s.b, (giriDi(s) > 1 ? giriDi(s) + "x" : "") + s.r + "x" + s.m, s.s, s.z];
   (s.a || []).forEach(a => p.push(a));
   if (s.p) p.push("p" + s.p);
   if (s.n) p.push(s.n);
@@ -1484,7 +1514,7 @@ function disegnaStagione(){
 function disegnaVoci(){
   const cont = document.getElementById("elenco-voci");
   cont.innerHTML = "";
-  const nomi = {rip:"Ripetizioni", dist:"Distanze", stile:"Stili", zona:"Zone",
+  const nomi = {giri:"Giri", rip:"Ripetizioni", dist:"Distanze", stile:"Stili", zona:"Zone",
                 blocco:"Blocchi", attr:"Attrezzi"};
   let vuoto = true;
   Object.keys(nomi).forEach(cat => {
@@ -1531,9 +1561,9 @@ function scarica(nome, testo, tipo){
 }
 
 function esportaCSV(){
-  const testa = ["data","gruppo","blocco","ripetizioni","distanza","metri","stile","zona","attrezzi","partenza","stato","note"];
+  const testa = ["data","gruppo","blocco","giri","ripetizioni","distanza","metri","stile","zona","attrezzi","partenza","stato","note"];
   const righe = serie.slice().sort((a,b) => a.d.localeCompare(b.d)).map(s => [
-    s.d, s.g, s.b, s.r, s.m, metriDi(s), nomeStile(s.s), nomeZona(s.z),
+    s.d, s.g, s.b, giriDi(s), s.r, s.m, metriDi(s), nomeStile(s.s), nomeZona(s.z),
     (s.a||[]).join("+"), s.p||"", s.f===0?"programmato":"svolto", (s.n||"").replace(/;/g,",")
   ].join(";"));
   scarica("allenamenti-" + oggiISO() + ".csv", "\uFEFF" + testa.join(";") + "\n" + righe.join("\n"), "text/csv");
@@ -1704,13 +1734,13 @@ function cambiaModo(form){
 
 document.getElementById("aggiungi").onclick = () => {
   if (inModifica) return salvaModifica();
-  aggiungiSerie([{r:bozza.r, m:bozza.m, s:bozza.s, z:bozza.z, b:bozza.b, a:bozza.a.slice(),
+  aggiungiSerie([{gi:bozza.gi || 1, r:bozza.r, m:bozza.m, s:bozza.s, z:bozza.z, b:bozza.b, a:bozza.a.slice(),
                   p:"", n:document.getElementById("nota").value.trim()}]);
   document.getElementById("nota").value = "";
 };
 document.getElementById("pulisci").onclick = () => {
   if (inModifica) return chiudiModifica();
-  bozza = {r:1, m:0, s:"sl", z:"en1", b:"main", a:[]};
+  bozza = nuovaBozza();
   document.getElementById("nota").value = ""; document.getElementById("partenza").value = "";
   disegnaForm(); anteprima();
 };
