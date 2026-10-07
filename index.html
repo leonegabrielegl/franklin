@@ -201,6 +201,17 @@ textarea{min-height:150px; line-height:1.6; resize:vertical; font-family:var(--f
 .icona{background:transparent; border:none; color:var(--nebbia); width:34px; height:34px; border-radius:var(--r-s); font-size:17px; line-height:1}
 .icona:hover{color:var(--piastrella); background:var(--acqua-alta)}
 .icona[disabled]{opacity:.2; pointer-events:none}
+.nota-serie{white-space:pre-wrap; overflow-wrap:anywhere}
+.lettura-testo{margin-top:14px; border-top:1px solid rgba(255,255,255,.06); padding-top:4px}
+.lettura-testo li{align-items:flex-start}
+.lettura-testo li .desc b{font-size:17px}
+.lettura-testo .mt{font-size:16px; padding-top:2px}
+.nota-letta{display:flex; gap:8px; align-items:baseline; margin-top:6px; padding-left:9px;
+  border-left:2px solid var(--en1); font-size:14px; color:var(--piastrella); line-height:1.4}
+.nota-letta small{font-size:12px; color:var(--nebbia); flex:none}
+.avviso-riga{display:block; margin-top:5px; font-size:12.5px; color:var(--en2)}
+.lettura-testo li.non-letta .desc small{display:block; font-size:12.5px; color:#F2A7B0; margin-bottom:4px}
+.lettura-testo li.non-letta code{white-space:pre-wrap; overflow-wrap:anywhere; display:inline-block}
 .serie li.inmodifica{background:var(--acqua-alta); border-radius:var(--r-m); padding-left:8px; padding-right:4px}
 .serie li.inmodifica .desc b{color:#9FE3F7}
 /* scheda da bordo vasca */
@@ -372,13 +383,13 @@ nav button[aria-pressed="true"] svg{stroke:var(--en1)}
           </div>
 
           <div class="pannello" id="form-testo" hidden>
-            <div class="etichetta"><b>Una serie per riga</b></div>
+            <div class="etichetta"><b>Una serie per riga</b> la nota dopo //</div>
             <textarea id="testo" spellcheck="false" placeholder="wu 1x400 sl en1
-tec 6x100 sl scull p2:00
-pre 4x100 sl en1 build
-main 12x200 sl en2 p2:36
-comp 8x100 sl en1 gambe
-def 1x300 mx en1"></textarea>
+tec 12x50 sl en1 scull // front/mid-scull, focus catch
+pre 4x100 sl en1 build p1:50
+main 6x200 sl en2 p2:55 // Greta 2:36, le altre 2:45
+comp 8x100 sl en1 gambe tavola
+def 1x200 mx en1 // social"></textarea>
             <div class="anteprima" style="margin-top:12px">
               <span class="testo" id="prevt-testo">Nessuna riga</span>
               <span class="metri" id="prevt-metri">0 m</span>
@@ -386,10 +397,14 @@ def 1x300 mx en1"></textarea>
             <div class="azioni">
               <button class="primario" id="aggiungi-testo" disabled>Aggiungi le serie</button>
             </div>
-            <p class="nota">Per ripetere una serie più volte scrivi <code>2x(5x100 sl en2 p1:30)</code> oppure <code>2x5x100 sl en2</code>.
-              Riconosce stile (sl do ra fa mx), zona (en1 tec en2 en3 sp), blocco (wu tec pre main comp def),
-              attrezzi (gambe pull palette pinne snorkel paracadute tavola elastico scull drill build) e partenza (p2:36).
-              Il resto della riga finisce nelle note.</p>
+            <ul class="serie lettura-testo" id="prevt-elenco" hidden></ul>
+            <p class="nota">Prima la struttura: blocco, ripetizioni×distanza, stile, zona, attrezzi e partenza (<code>p2:36</code>).
+              Tutto quello che scrivi dopo <code>//</code> è la nota e resta identico, virgole e numeri compresi.
+              Senza <code>//</code> la nota comincia dalla prima parola che non riconosco.
+              Una riga senza misura si aggiunge alla nota della serie sopra.</p>
+            <p class="nota">Giri: <code>2x(5x100 sl en2 p1:30)</code> oppure <code>2x5x100 sl en2</code>.
+              Puoi incollare anche righe copiate da Excel o Fogli: ogni colonna viene letta per quello che contiene
+              e la cella della nota resta così com'è.</p>
           </div>
         </div>
       </div>
@@ -790,109 +805,314 @@ function sommaStili(lista){
 }
 const totale = lista => lista.reduce((a,s) => a + metriDi(s), 0);
 
-/* ============ interpretazione del testo ============ */
+/* ============ interpretazione del testo ============
+   Una riga: blocco, ripetizioni×distanza, stile, zona, attrezzi, partenza, nota.
+   La nota si copia carattere per carattere. Comincia dopo "//" oppure, senza "//",
+   dalla prima parola che non è struttura; da lì in poi non si tocca più niente,
+   salvo una partenza scritta con la p o il codice di una zona, se mancavano.
+   Le righe copiate da Excel o Fogli (con le tabulazioni) si leggono colonna per colonna. */
 const V_STILE = {sl:"sl",st:"sl",crawl:"sl",libero:"sl",do:"do",dorso:"do",bk:"do",
   ra:"ra",rana:"ra",br:"ra",fa:"fa",df:"fa",delfino:"fa",farfalla:"fa",fly:"fa",
   mx:"mx",misto:"mx",im:"mx"};
 const V_ZONA = {en1:"en1","en-1":"en1",a1:"en1",a2:"en1",tec:"tec",tecnica:"tec",
   en2:"en2","en-2":"en2",b1:"en2",soglia:"en2",en3:"en3","en-3":"en3",b2:"en3",
   sp:"sp",sprint:"sp",c:"sp"};
-const V_BLOCCO = {wu:"wu",risc:"wu",riscaldamento:"wu",tec:"tec",tecnica:"tec",
-  pre:"pre",preserie:"pre",main:"main",serie:"main",principale:"main",
+const V_BLOCCO = {wu:"wu",risc:"wu",riscaldamento:"wu","warm-up":"wu",warmup:"wu",tec:"tec",tecnica:"tec",
+  pre:"pre",preserie:"pre","pre-serie":"pre",main:"main",serie:"main",principale:"main",
   comp:"comp",compl:"comp",complemento:"comp",def:"def",defat:"def",defaticamento:"def"};
 const V_ATTR = {};
 ATTREZZI.forEach(a => V_ATTR[a.toLowerCase()] = a);
 V_ATTR["sculling"] = "scull"; V_ATTR["scull"] = "scull"; V_ATTR["tubo"] = "tubo";
 V_ATTR["drag"] = "drag"; V_ATTR["ubk"] = "UDK"; V_ATTR["udk"] = "UDK";
+// i codici di zona che valgono anche dentro la nota, se la zona non era stata scritta prima
+const CODICI_ZONA = ["en1","en-1","en2","en-2","en3","en-3","tec","sp"];
+
+// la forma di una parola usata per riconoscerla; la nota tiene invece la forma scritta
+function chiave(tok){
+  return String(tok == null ? "" : tok).toLowerCase()
+    .replace(/[’‘`]/g, "'").replace(/[”“]/g, '"')
+    .replace(/^[(\[{]+/, "").replace(/[,;:!?)\]}]+$/, "").replace(/\.$/, "");
+}
+const chiaveVoce = v => String(v == null ? "" : v).split(/\s+/).filter(Boolean).map(chiave).join(" ");
 
 // le voci aggiunte a mano diventano parole riconosciute anche in modalità testo
 function vocabolario(base, cat){
   const v = Object.assign({}, base);
   voci(cat).forEach(id => {
-    const k = String(id).toLowerCase();
-    if (v[k] === undefined) v[k] = id;
+    const k = chiaveVoce(id);
+    if (k && v[k] === undefined) v[k] = id;
   });
   return v;
 }
+const vocabolari = () => ({s: vocabolario(V_STILE, "stile"), z: vocabolario(V_ZONA, "zona"),
+                           b: vocabolario(V_BLOCCO, "blocco"), a: vocabolario(V_ATTR, "attr")});
 
-function leggiRiga(riga){
-  const V_S = vocabolario(V_STILE, "stile"),
-        V_Z = vocabolario(V_ZONA, "zona"),
-        V_B = vocabolario(V_BLOCCO, "blocco"),
-        V_A = vocabolario(V_ATTR, "attr");
-  let t = riga.trim(); if(!t || t.startsWith("#")) return null;
-  t = t.replace(/(\d)\.(\d{3})\b/g, "$1$2");
-  let giri = 1, rip = 1, dist = 0;
-  // giri scritti come "3x(4x100 ...)": tolgo "3x(" e la parentesi che la chiude
-  const conParentesi = t.match(/(\d+)\s*[x×*]\s*\(/i);
-  if (conParentesi){
-    giri = +conParentesi[1];
-    // la parentesi da togliere è quella che chiude "Nx(", contando quelle aperte dentro
-    const aperta = conParentesi.index + conParentesi[0].length - 1;
+// "2:36", "2'36"", "1.30", "2'", "45"", con o senza la p davanti -> "m:ss"; altrimenti null
+function partenzaDa(testo){
+  const k = String(testo == null ? "" : testo).toLowerCase().replace(/\s+/g, "")
+    .replace(/[’‘`]/g, "'").replace(/[”“]/g, '"').replace(/^p/, "");
+  let m = k.match(/^(\d{1,2})[:'.](\d{2})(?:"|'')?$/);
+  if (m) return +m[2] < 60 ? (+m[1]) + ":" + m[2] : null;
+  m = k.match(/^(\d{1,2})'$/);
+  if (m) return (+m[1]) + ":00";
+  m = k.match(/^(\d{1,3})"$/);
+  if (m){ const s = +m[1]; return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); }
+  return null;
+}
+// una partenza scritta a mano: normalizzata se è un tempo, altrimenti tenuta com'era
+const normPartenza = v => { const t = String(v == null ? "" : v).trim(); return partenzaDa(t) || t; };
+
+const NUM = "(\\d{1,3}(?:\\.\\d{3})+|\\d+)";            // 1.500 oppure 1500
+const NUM_SOLO = "(\\d{1,3}(?:\\.\\d{3})+|\\d{2,5})";
+const numero = s => parseInt(String(s).replace(/\./g, ""), 10) || 0;
+const misura = r => (giriDi(r) > 1 ? giriDi(r) + "×(" : "") + (r.r > 1 ? r.r + "×" : "") + r.m + (giriDi(r) > 1 ? ")" : "");
+const haParole = t => /[A-Za-zÀ-ÖØ-öø-ÿ]{2,}/.test(t);
+
+/* ---------- una riga scritta a mano, o copiata col tasto Copia ---------- */
+function leggiRigaEsito(rigaIn){
+  const riga0 = String(rigaIn == null ? "" : rigaIn).replace(/ /g, " ").replace(/\t/g, " ");
+  const pulita = riga0.trim();
+  if (!pulita || pulita[0] === "#") return {vuota: true};
+  if (/^tot(ale)?\.?$/i.test(pulita.split(/\s+/)[0])) return {ignora: true};   // la riga dei totali
+  const V = vocabolari();
+
+  // la nota esplicita: tutto quello che segue "//", a inizio riga o dopo uno spazio
+  let riga = riga0, notaEsplicita = "";
+  const sep = riga.match(/(^|\s)\/\//);
+  if (sep){
+    notaEsplicita = riga.slice(sep.index + sep[0].length).trim();
+    riga = riga.slice(0, sep.index);
+  }
+
+  // la struttura riconosciuta diventa spazio: le posizioni del resto non cambiano
+  const vuota = (s, a, b) => s.slice(0, a) + " ".repeat(Math.max(0, b - a)) + s.slice(b);
+  let t = riga, giri = 1, rip = 1, dist = 0, moltiplicatore = false;
+  const par = t.match(/(\d+)\s*[x×*]\s*\(/i);
+  if (par){                                   // "3x(4x100 ...)": via "3x(" e la sua parentesi
+    giri = +par[1];
+    const aperta = par.index + par[0].length - 1;
     let prof = 0, chiusa = -1;
     for (let i = aperta; i < t.length; i++){
       if (t[i] === "(") prof++;
-      else if (t[i] === ")"){ prof--; if (prof === 0){ chiusa = i; break; } }
+      else if (t[i] === ")"){ prof--; if (!prof){ chiusa = i; break; } }
     }
-    if (chiusa >= 0) t = t.slice(0, chiusa) + " " + t.slice(chiusa + 1);
-    t = t.slice(0, conParentesi.index) + " " + t.slice(aperta + 1);
+    if (chiusa >= 0) t = vuota(t, chiusa, chiusa + 1);
+    t = vuota(t, par.index, aperta + 1);
   }
-  // oppure in forma compatta "3x4x100"
-  const tripla = !conParentesi && t.match(/(\d+)\s*[x×*]\s*(\d+)\s*[x×*]\s*(\d+)/i);
-  const mult = tripla ? null : t.match(/(\d+)\s*[x×*]\s*(\d+)/i);
-  if (tripla){ giri = +tripla[1]; rip = +tripla[2]; dist = +tripla[3]; t = t.replace(tripla[0], " "); }
-  else if (mult){ rip = +mult[1]; dist = +mult[2]; t = t.replace(mult[0], " "); }
-  else { const solo = t.match(/(?:^|\s)(\d{2,4})(?=\s|$)/); if(!solo) return null;
-         dist = +solo[1]; t = t.replace(solo[0], " "); }
-  if (!dist) return null;
-  const r = {gi:giri, r:rip, m:dist, s:"sl", z:"en1", b:"main", a:[], p:"", n:""};
-  let vistoZona = false, vistoBlocco = false, vistoStile = false, note = [];
-
-  // le voci di più parole vanno riconosciute prima di spezzare la riga sugli spazi
-  [["attr",V_A],["stile",V_S],["zona",V_Z],["blocco",V_B]].forEach(coppia => {
-    const cat = coppia[0], voc = coppia[1];
-    Object.keys(voc).filter(k => k.indexOf(" ") > 0)
-      .sort((a,b) => b.length - a.length)
-      .forEach(k => {
-        const i = t.toLowerCase().indexOf(k);
-        if (i < 0) return;
-        const val = voc[k];
-        if (cat === "attr") r.a.push(val);
-        else if (cat === "stile" && !vistoStile){ r.s = val; vistoStile = true; }
-        else if (cat === "zona" && !vistoZona){ r.z = val; vistoZona = true; }
-        else if (cat === "blocco" && !vistoBlocco){ r.b = val; vistoBlocco = true; }
-        else return;
-        t = t.slice(0, i) + " " + t.slice(i + k.length);
-      });
-  });
-
-  // la prima parola della riga è il blocco: se più avanti c'è una zona esplicita,
-  // "tec" all'inizio vale come blocco e non deve rubare il posto alla zona scritta
-  const pezzi = t.split(/[\s,;]+/).filter(Boolean);
-  const primo = (pezzi[0] || "").toLowerCase();
-  if (!vistoBlocco && V_B[primo] !== undefined &&
-      pezzi.slice(1).some(x => V_Z[x.toLowerCase()] !== undefined)){
-    r.b = V_B[primo]; vistoBlocco = true; pezzi.shift();
+  const METRI = "(?:\\s?m(?![a-zà-ÿ]))?";
+  const tripla = !par && t.match(new RegExp(NUM + "\\s*[x×*]\\s*" + NUM + "\\s*[x×*]\\s*" + NUM + METRI, "i"));
+  const doppia = !tripla && t.match(new RegExp(NUM + "\\s*[x×*]\\s*" + NUM + METRI, "i"));
+  const solo = t.match(new RegExp("(^|\\s)" + NUM_SOLO + "(\\s?m)?(?=[\\s,;]|$)", "i"));
+  const molt = tripla || doppia;
+  // vale la misura che viene prima: in "wu 400 sl en1 poi 2x100" la serie è il 400
+  if (solo && (!molt || solo.index + solo[1].length < molt.index)){
+    dist = numero(solo[2]);
+    const a = solo.index + solo[1].length;
+    t = vuota(t, a, a + solo[2].length + (solo[3] ? solo[3].length : 0));
+  } else if (tripla){
+    giri = numero(tripla[1]); rip = numero(tripla[2]); dist = numero(tripla[3]); moltiplicatore = true;
+    t = vuota(t, tripla.index, tripla.index + tripla[0].length);
+  } else if (doppia){
+    rip = numero(doppia[1]); dist = numero(doppia[2]); moltiplicatore = true;
+    t = vuota(t, doppia.index, doppia.index + doppia[0].length);
   }
+  const soloTesto = () => {
+    const testo = riga.trim() ? pulita : notaEsplicita;
+    return haParole(testo) ? {testo: testo} : {nonLetta: pulita};
+  };
+  if (!dist) return soloTesto();
 
-  pezzi.forEach(tok => {
-    const k = tok.toLowerCase().replace(/[.]$/,"");
-    if (/^p?\d{1,2}[:'.]\d{2}"?$/.test(k)){ r.p = k.replace(/^p/,""); return; }
-    if (V_S[k] !== undefined && !vistoStile){ r.s = V_S[k]; vistoStile = true; return; }
-    if (V_Z[k] !== undefined && !vistoZona){
-      r.z = V_Z[k]; vistoZona = true;
-      if (k === "tec" && !vistoBlocco){ r.b = "tec"; vistoBlocco = true; }
-      return; }
-    if (V_B[k] !== undefined && !vistoBlocco){ r.b = V_B[k]; vistoBlocco = true; return; }
-    if (V_A[k] !== undefined){ r.a.push(V_A[k]); return; }
-    note.push(tok);
+  const toks = [], re = /\S+/g;
+  let m;
+  while ((m = re.exec(t))) toks.push({raw: m[0], a: m.index, b: m.index + m[0].length, k: chiave(m[0]), i: toks.length});
+
+  const r = {gi: giri, r: rip, m: dist, s: "sl", z: "en1", b: "main", a: [], p: "", n: ""};
+  let vS = false, vZ = false, vB = false, inNota = false, i = 0;
+  const nota = [];
+  const iniziaConBlocco = toks.length > 0 && V.b[toks[0].k] !== undefined;
+  const codiciZona = new Set(CODICI_ZONA);
+  voci("zona").forEach(id => { if (!ZONE.some(x => x[0] === id)) codiciZona.add(chiaveVoce(id)); });
+  // la prima parola è il blocco se più avanti c'è una zona: risolve "tec" e "tecnica"
+  if (iniziaConBlocco && toks.slice(1).some(x => V.z[x.k] !== undefined)){
+    r.b = V.b[toks[0].k]; vB = true; i = 1;
+  }
+  const aggiungiAttrezzo = v => { if (r.a.indexOf(v) < 0) r.a.push(v); };
+  while (i < toks.length){
+    const x = toks[i], k = x.k;
+    if (!inNota){
+      let preso = 0;                            // prima le voci di più parole, dalla più lunga
+      for (let n = Math.min(4, toks.length - i); n >= 2 && !preso; n--){
+        const kk = toks.slice(i, i + n).map(y => y.k).join(" ");
+        if (V.a[kk] !== undefined){ aggiungiAttrezzo(V.a[kk]); preso = n; }
+        else if (!vS && V.s[kk] !== undefined){ r.s = V.s[kk]; vS = true; preso = n; }
+        else if (!vZ && V.z[kk] !== undefined){ r.z = V.z[kk]; vZ = true; preso = n; }
+        else if (!vB && V.b[kk] !== undefined){ r.b = V.b[kk]; vB = true; preso = n; }
+      }
+      if (preso){ i += preso; continue; }
+      const part = partenzaDa(k);
+      if (part && !r.p){ r.p = part; i++; continue; }
+      if (!vS && V.s[k] !== undefined){ r.s = V.s[k]; vS = true; i++; continue; }
+      if (!vZ && V.z[k] !== undefined){
+        r.z = V.z[k]; vZ = true;
+        if (k === "tec" && !vB){ r.b = "tec"; vB = true; }
+        i++; continue;
+      }
+      if (!vB && V.b[k] !== undefined){ r.b = V.b[k]; vB = true; i++; continue; }
+      if (V.a[k] !== undefined){ aggiungiAttrezzo(V.a[k]); i++; continue; }
+      inNota = true;
+    }
+    // dentro la nota: solo la partenza con la p e il codice della zona, se mancavano
+    if (!r.p && /^p\d/i.test(x.raw)){ const part = partenzaDa(k); if (part){ r.p = part; i++; continue; } }
+    if (!vZ && codiciZona.has(k) && V.z[k] !== undefined){ r.z = V.z[k]; vZ = true; i++; continue; }
+    nota.push(x); i++;
+  }
+  // una misura sola, senza moltiplicatore né altri indizi, non basta per essere una serie
+  if (!moltiplicatore && !(iniziaConBlocco || vS || vZ || r.p || dist % 25 === 0)) return soloTesto();
+  if (r.a.indexOf("scull") >= 0 && !vZ) r.z = "tec";
+  if (r.z === "tec" && !vB) r.b = "tec";
+
+  // la nota con gli spazi e la punteggiatura com'erano; dove è stato tolto qualcosa resta uno spazio
+  let testoNota = "";
+  nota.forEach((x, j) => {
+    if (j){
+      const y = nota[j - 1], tra = riga.slice(y.b, x.a);
+      testoNota += (x.i === y.i + 1 && t.slice(y.b, x.a) === tra) ? tra : " ";
+    }
+    testoNota += x.raw;
   });
-  if (r.a.includes("scull") && !vistoZona) r.z = "tec";
-  if (r.z === "tec" && !vistoBlocco) r.b = "tec";
-  r.n = note.join(" ");
-  return r;
+  r.n = [testoNota, notaEsplicita].filter(Boolean).join(" ");
+
+  const avvisi = [];
+  if (!vZ){
+    const w = nota.find(x => V.z[x.k] !== undefined);
+    if (w) avvisi.push("«" + w.raw + "» è rimasta nella nota: se è la zona, scrivila prima della nota");
+  }
+  if (!vS){
+    const w = nota.find(x => V.s[x.k] !== undefined && x.k.length > 2);
+    if (w) avvisi.push("«" + w.raw + "» è rimasta nella nota: se è lo stile, scrivilo prima della nota");
+  }
+  return {serie: r, avvisi: avvisi};
 }
-const leggiTesto = txt => txt.split(/\n/).map(leggiRiga).filter(Boolean);
+
+/* ---------- una riga copiata da Excel o Fogli: una colonna alla volta ---------- */
+function leggiCelle(celleIn){
+  const celle = celleIn.map(x => String(x == null ? "" : x).replace(/ /g, " ").replace(/\s*[\r\n]+\s*/g, " ").trim());
+  const piene = celle.filter(Boolean);
+  if (!piene.length || piene[0][0] === "#") return {vuota: true};
+  const k0 = chiave(piene[0].split(/\s+/)[0]);
+  if (/^tot(ale)?$/.test(k0)) return {ignora: true};
+  const V = vocabolari();
+  const eNum = x => new RegExp("^" + NUM + "$").test(x);
+  const reMolt = new RegExp("^" + NUM + "\\s*[x×*]\\s*\\(?\\s*" + NUM + "(?:\\s*[x×*]\\s*" + NUM + ")?\\s*\\)?$", "i");
+  const iNum = celle.findIndex(x => eNum(x) || reMolt.test(x));
+  if (iNum < 0){
+    if (k0 === "blocco") return {ignora: true};                     // la riga delle intestazioni
+    // una sola cella con dei numeri: una riga scritta a mano, magari rientrata
+    if (piene.filter(x => /\d/.test(x)).length === 1){
+      const e = leggiRigaEsito(piene.join(" "));
+      if (e.serie) return e;
+    }
+    return haParole(piene.join(" ")) ? {testo: piene.join(" ")} : {nonLetta: piene.join("  ")};
+  }
+
+  const r = {gi: 1, r: 1, m: 0, s: "sl", z: "en1", b: "main", a: [], p: "", n: ""};
+  const avvisi = [];
+  let j;
+  const mm = celle[iNum].match(reMolt);
+  if (mm){
+    if (mm[3]){ r.gi = numero(mm[1]); r.r = numero(mm[2]); r.m = numero(mm[3]); }
+    else { r.r = numero(mm[1]); r.m = numero(mm[2]); }
+    j = iNum + 1;
+  } else {
+    const a = numero(celle[iNum]), bOk = eNum(celle[iNum + 1] || ""), b = bOk ? numero(celle[iNum + 1]) : 0;
+    if (bOk && b !== a){ r.r = a; r.m = b; j = iNum + 2; }
+    else { r.m = a; j = iNum + 1; }                                   // una misura sola, o distanza e metri uguali
+  }
+  if (!r.m) return {testo: piene.join(" ")};
+  // i metri scritti nella colonna dopo sono un controllo: vale ripetizioni × distanza
+  if (j < celle.length && eNum(celle[j])){
+    const dich = numero(celle[j]);
+    if (dich !== metriDi(r)) avvisi.push("nella riga c'erano " + fmt(dich) + " m, " + misura(r) + " fa " + fmt(metriDi(r)));
+    j++;
+  }
+  // il blocco è la prima cella piena prima dei numeri, riconosciuto o scritto a modo tuo
+  const prima = celle.slice(0, iNum).filter(Boolean);
+  if (prima.length){
+    const kb = chiaveVoce(prima[0].replace(/\s*\([^)]*\)\s*$/, ""));
+    r.b = V.b[kb] !== undefined ? V.b[kb] : prima[0];
+  }
+  const resto = celle.slice(j).filter(Boolean), usate = {};
+  const iZ = resto.findIndex(x => V.z[chiaveVoce(x)] !== undefined);
+  if (iZ >= 0){
+    r.z = V.z[chiaveVoce(resto[iZ])]; usate[iZ] = true;
+    if (iZ > 0 && !partenzaDa(resto[iZ - 1])){                        // lo stile sta subito prima della zona
+      const ks = chiaveVoce(resto[iZ - 1]);
+      r.s = V.s[ks] !== undefined ? V.s[ks] : resto[iZ - 1]; usate[iZ - 1] = true;
+    }
+  } else {
+    const iS = resto.findIndex(x => V.s[chiaveVoce(x)] !== undefined);
+    if (iS >= 0){ r.s = V.s[chiaveVoce(resto[iS])]; usate[iS] = true; }
+  }
+  const iP = resto.findIndex((x, i) => !usate[i] && i > iZ && partenzaDa(x));
+  if (iP >= 0){ r.p = partenzaDa(resto[iP]); usate[iP] = true; }
+  // tutto il resto è nota: le celle così come sono, in ordine
+  r.n = prima.slice(1).concat(resto.filter((x, i) => !usate[i])).join(" ");
+  return {serie: r, avvisi: avvisi};
+}
+
+/* ---------- il testo intero ---------- */
+// le righe logiche: con le tabulazioni una cella tra virgolette può andare a capo (Excel, Fogli)
+function righeDiTesto(testo){
+  const t = String(testo == null ? "" : testo).replace(/\r\n?/g, "\n");
+  if (t.indexOf("\t") < 0) return t.split("\n").map(x => ({testo: x, celle: null}));
+  const record = [];
+  let celle = [], cella = "", i = 0, inizio = true;
+  while (i <= t.length){
+    const c = t[i];
+    if (inizio && c === '"'){
+      let j = i + 1, val = "", chiusa = false;
+      while (j < t.length){
+        if (t[j] === '"'){
+          if (t[j + 1] === '"'){ val += '"'; j += 2; continue; }
+          if (j + 1 >= t.length || t[j + 1] === "\t" || t[j + 1] === "\n"){ chiusa = true; j++; }
+          break;
+        }
+        val += t[j]; j++;
+      }
+      if (chiusa){ cella = val; i = j; inizio = false; continue; }
+    }
+    if (c === undefined || c === "\n"){ celle.push(cella); record.push(celle); celle = []; cella = ""; inizio = true; i++; continue; }
+    if (c === "\t"){ celle.push(cella); cella = ""; inizio = true; i++; continue; }
+    cella += c; inizio = false; i++;
+  }
+  return record.map(cs => cs.length > 1 ? {testo: cs.join("\t"), celle: cs} : {testo: cs[0], celle: null});
+}
+
+// le serie lette, più il resoconto riga per riga per l'anteprima
+function analizzaTesto(testo){
+  const righe = [], lette = [];
+  let ultima = null;
+  righeDiTesto(testo).forEach(rec => {
+    const e = rec.celle ? leggiCelle(rec.celle) : leggiRigaEsito(rec.testo);
+    if (e.vuota || e.ignora) return;
+    if (e.serie){
+      lette.push(e.serie);
+      ultima = {serie: e.serie, avvisi: e.avvisi || []};
+      righe.push(ultima);
+      return;
+    }
+    // una riga di sola nota va alla serie sopra, così le note su più righe non si perdono
+    if (e.testo && ultima){
+      ultima.serie.n = ultima.serie.n ? ultima.serie.n + " " + e.testo : e.testo;
+      ultima.unite = (ultima.unite || 0) + 1;
+      return;
+    }
+    righe.push({nonLetta: String(rec.testo || "").replace(/\t+/g, "  ").trim()});
+  });
+  return {serie: lette, righe: righe};
+}
+const leggiTesto = testo => analizzaTesto(testo).serie;
+function leggiRiga(riga){ const e = leggiRigaEsito(riga); return e.serie || null; }
 
 /* ============ stato del modulo ============ */
 const nuovaBozza = () => ({gi:1, r:1, m:0, s:"sl", z:"en1", b:"main", a:[]});
@@ -1051,7 +1271,7 @@ function salvaModifica(){
   if (!s) return chiudiModifica();
   s.gi = bozza.gi || 1; s.r = bozza.r; s.m = bozza.m; s.s = bozza.s; s.z = bozza.z; s.b = bozza.b;
   s.a = bozza.a.slice();
-  s.p = document.getElementById("partenza").value.trim();
+  s.p = normPartenza(document.getElementById("partenza").value);
   s.n = document.getElementById("nota").value.trim();
   s.f = +document.getElementById("stato").value;
   s.ts = Date.now();            // la modifica vince sul foglio alla prossima sincronizzazione
@@ -1064,12 +1284,43 @@ function salvaModifica(){
 }
 
 function anteprimaTesto(){
-  const righe = leggiTesto(document.getElementById("testo").value);
-  const m = righe.reduce((a,r) => a + metriDi(r), 0);
-  document.getElementById("prevt-testo").textContent =
-    righe.length ? righe.length + " serie, " + minuti(durataSeduta(righe.map(r => Object.assign({g: pref.gruppo}, r))).sec) : "Nessuna riga";
-  document.getElementById("prevt-metri").textContent = fmt(m) + " m";
-  document.getElementById("aggiungi-testo").disabled = !righe.length;
+  const esito = analizzaTesto(document.getElementById("testo").value);
+  const lette = esito.serie.map(r => Object.assign({g: pref.gruppo}, r));
+  document.getElementById("prevt-testo").textContent = lette.length
+    ? lette.length + " serie, " + minuti(durataSeduta(lette).sec) : "Nessuna riga";
+  document.getElementById("prevt-metri").textContent = fmt(totale(lette)) + " m";
+  document.getElementById("aggiungi-testo").disabled = !lette.length;
+  // come ho letto ogni riga: la nota compare esattamente come la salverò
+  const ul = document.getElementById("prevt-elenco");
+  ul.innerHTML = "";
+  esito.righe.forEach(x => {
+    const li = document.createElement("li");
+    const desc = document.createElement("span"); desc.className = "desc";
+    if (x.nonLetta){
+      li.className = "non-letta";
+      const et = document.createElement("small"); et.textContent = "Riga non letta, non verrà aggiunta";
+      const c = document.createElement("code"); c.textContent = x.nonLetta;
+      desc.append(et, c); li.appendChild(desc); ul.appendChild(li);
+      return;
+    }
+    const s = Object.assign({g: pref.gruppo}, x.serie);
+    const badge = document.createElement("span"); badge.className = "zbadge"; badge.style.background = colZona(s.z);
+    const b = document.createElement("b"); b.textContent = descrizione(s);
+    desc.append(b, dettaglioNodi(Object.assign({}, s, {n: ""}), false));
+    if (s.n){
+      const riga = document.createElement("span"); riga.className = "nota-letta";
+      const et = document.createElement("small"); et.textContent = "Nota";
+      const tx = document.createElement("span"); tx.className = "nota-serie"; tx.textContent = s.n;
+      riga.append(et, tx); desc.appendChild(riga);
+    }
+    (x.avvisi || []).forEach(a => {
+      const w = document.createElement("span"); w.className = "avviso-riga"; w.textContent = a; desc.appendChild(w);
+    });
+    const mt = document.createElement("span"); mt.className = "mt"; mt.textContent = fmt(metriDi(s));
+    li.append(badge, desc, mt);
+    ul.appendChild(li);
+  });
+  ul.hidden = !esito.righe.length;
 }
 
 /* ============ durata stimata ============
@@ -1156,9 +1407,12 @@ function disegnaTempi(){
 function serieARiga(s){
   const p = [s.b, (giriDi(s) > 1 ? giriDi(s) + "x" : "") + s.r + "x" + s.m, s.s, s.z];
   (s.a || []).forEach(a => p.push(a));
-  if (s.p) p.push("p" + s.p);
-  if (s.n) p.push(s.n);
-  return p.join(" ");
+  if (s.p) p.push("p" + normPartenza(s.p).replace(/\s+/g, ""));
+  let riga = p.join(" ");
+  // la nota va dopo "//": così torna indietro identica, qualunque parola o numero contenga
+  const nota = String(s.n || "").replace(/\s*[\r\n]+\s*/g, " ").trim();
+  if (nota) riga += " // " + nota;
+  return riga;
 }
 
 function sedutaATesto(lista){
@@ -1208,7 +1462,7 @@ function aggiungiSerie(righe){
       o: ord,
       id: Date.now().toString(36) + Math.random().toString(36).slice(2,7),
       ts: Date.now(), d, g: pref.gruppo, f,
-      p: r.p || document.getElementById("partenza").value.trim(),
+      p: normPartenza(r.p),
       n: r.n || ""
     }));
   });
@@ -1662,12 +1916,17 @@ function scarica(nome, testo, tipo){
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 200);
 }
 
+// un campo CSV tra virgolette quando serve: note con ; " o a capo restano intere
+const campoCSV = v => { const t = String(v == null ? "" : v);
+  return /[;"\r\n]|^\s|\s$/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
 function esportaCSV(){
   const testa = ["data","gruppo","blocco","giri","ripetizioni","distanza","metri","stile","zona","attrezzi","partenza","stato","note"];
-  const righe = serie.slice().sort((a,b) => a.d.localeCompare(b.d)).map(s => [
-    s.d, s.g, s.b, giriDi(s), s.r, s.m, metriDi(s), nomeStile(s.s), nomeZona(s.z),
-    (s.a||[]).join("+"), s.p||"", s.f===0?"programmato":"svolto", (s.n||"").replace(/;/g,",")
-  ].join(";"));
+  const righe = serie.slice()
+    .sort((a,b) => a.d.localeCompare(b.d) || String(a.g).localeCompare(String(b.g)) || ((a.o||0) - (b.o||0)))
+    .map(s => [
+      s.d, s.g, s.b, giriDi(s), s.r, s.m, metriDi(s), nomeStile(s.s), nomeZona(s.z),
+      (s.a||[]).join("+"), s.p||"", s.f===0?"programmato":"svolto", s.n||""
+    ].map(campoCSV).join(";"));
   scarica("allenamenti-" + oggiISO() + ".csv", "\uFEFF" + testa.join(";") + "\n" + righe.join("\n"), "text/csv");
 }
 
@@ -1935,7 +2194,7 @@ function dettaglioNodi(s, senzaBlocco){
   if (s.p) add("p" + s.p, true);
   add(minuti(durataSerie(s)), true);
   if (s.a && s.a.length) add(s.a.join(" + "));
-  if (s.n) add(s.n);
+  if (s.n){ const x = document.createElement("span"); x.className = "nota-serie"; x.textContent = s.n; d.appendChild(x); }
   if (s.f === 0) add("programmata");
   return d;
 }
@@ -2447,7 +2706,8 @@ function cambiaModo(form){
 document.getElementById("aggiungi").onclick = () => {
   if (inModifica) return salvaModifica();
   aggiungiSerie([{gi:bozza.gi || 1, r:bozza.r, m:bozza.m, s:bozza.s, z:bozza.z, b:bozza.b, a:bozza.a.slice(),
-                  p:"", n:document.getElementById("nota").value.trim()}]);
+                  p: normPartenza(document.getElementById("partenza").value),
+                  n: document.getElementById("nota").value.trim()}]);
   document.getElementById("nota").value = "";
 };
 document.getElementById("pulisci").onclick = () => {
