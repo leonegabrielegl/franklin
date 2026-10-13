@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Vasca — registro allenamenti</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0A2F3A">
+<meta name="theme-color" content="#151F20">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Vasca">
@@ -21,11 +21,11 @@
    Acqua profonda, piastrella bianca, la riga nera del fondo vasca per le tracce.
    I colori delle zone sono i galleggianti della corsia, dal più facile al più duro. */
 :root{
-  --fondale:#0A2230; --acqua:#0F3141; --acqua-alta:#15394B; --bordo:#1E4C61;
-  --linea:#061722; --piastrella:#E9F2F4; --nebbia:#8DB0BC; --tenue:#8DB0BC;
-  --en1:#46B5E0; --tec:#8FA7B3; --en2:#F2C14E; --en3:#F08A3E; --sp:#E5484D;
-  --sl:#46B5E0; --do:#7ACFAE; --ra:#F2C14E; --fa:#C98BD9; --mx:#8DB0BC;
-  --ok:#5FCB97; --gap:#E5484D; --lancetta:#E5484D;
+  --fondale:#151F20; --acqua:#1A2626; --acqua-alta:#253535; --bordo:#3F5151;
+  --linea:#0D1313; --piastrella:#F3EAE2; --nebbia:#A9A8A2; --tenue:#979690;
+  --en1:#4F9A94; --tec:#B3B1AA; --en2:#F2A360; --en3:#C07450; --sp:#C23B4A;
+  --sl:#F2A360; --do:#4F9A94; --ra:#C07450; --fa:#B48CA3; --mx:#B3B1AA;
+  --ok:#66B2AA; --gap:#F07E70; --lancetta:#F07E70;
   --f-num:'Saira Condensed', 'Barlow Condensed', 'Arial Narrow', system-ui, sans-serif;
   --f-testo:'Saira', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --r-s:8px; --r-m:12px; --r-l:18px;
@@ -43,7 +43,7 @@ body{
 h1,h2,h3{font-family:var(--f-num); font-weight:600; margin:0; letter-spacing:0}
 button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent}
 input,select,textarea{font-family:inherit; font-size:16px}
-:focus-visible{outline:2px solid #8FDDF7; outline-offset:2px; border-radius:6px}
+:focus-visible{outline:2px solid #F2A360; outline-offset:2px; border-radius:6px}
 .num{font-family:var(--f-num); font-weight:700}
 code{font-family:var(--f-num); font-size:1.05em; color:var(--piastrella); background:var(--linea); padding:1px 6px; border-radius:5px}
 [hidden]{display:none !important}
@@ -63,8 +63,8 @@ code{font-family:var(--f-num); font-size:1.05em; color:var(--piastrella); backgr
 .gruppi button .corsietta i{display:block; height:100%; border-radius:2px; background:var(--nebbia)}
 .gruppi button[aria-pressed="true"]{background:var(--acqua); border-color:var(--bordo); color:var(--piastrella)}
 .gruppi button[aria-pressed="true"] .corsietta i{background:var(--piastrella)}
-.avviso{max-width:1180px; margin:10px auto 0; padding:9px 12px; border-radius:var(--r-m); background:#43202A;
-  border:1px solid #7A3A46; color:#F5CDD3; font-size:14px}
+.avviso{max-width:1180px; margin:10px auto 0; padding:9px 12px; border-radius:var(--r-m); background:#321E1D;
+  border:1px solid #7A3E38; color:#F6D3CA; font-size:14px}
 
 /* ============ impianto ============ */
 main{padding:4px 14px 24px; max-width:1180px; margin:0 auto}
@@ -86,13 +86,13 @@ main{padding:4px 14px 24px; max-width:1180px; margin:0 auto}
 .secondario{padding:12px 15px; border-radius:var(--r-m); border:1px solid var(--bordo); background:transparent;
   color:var(--piastrella); font-family:var(--f-num); font-size:17px; font-weight:600}
 .secondario:hover{background:var(--acqua-alta)}
-.pericolo{border-color:#6B3540; color:#F2B8C0}
+.pericolo{border-color:#7A3E38; color:#F3B3A5}
 .azioni{display:flex; gap:8px; margin-top:12px; flex-wrap:wrap}
 label.campo{display:flex; flex-direction:column; gap:5px; font-size:13px; color:var(--nebbia); flex:1; min-width:120px}
 input[type=date],input[type=text],input[type=number],textarea,select{
   background:var(--linea); border:1px solid var(--bordo); color:var(--piastrella); border-radius:var(--r-s);
   padding:10px 11px; width:100%}
-input::placeholder, textarea::placeholder{color:#5D8291}
+input::placeholder, textarea::placeholder{color:#777775}
 textarea{min-height:150px; line-height:1.6; resize:vertical; font-family:var(--f-num); font-size:15px}
 .riga-campi{display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end}
 
@@ -130,7 +130,7 @@ textarea{min-height:150px; line-height:1.6; resize:vertical; font-family:var(--f
 .anteprima .metri{font-family:var(--f-num); font-size:25px; font-weight:700; white-space:nowrap}
 .barra-azione{position:sticky; bottom:calc(var(--barra-nav) + 8px + env(safe-area-inset-bottom)); z-index:5;
   display:flex; gap:8px; align-items:stretch; margin:16px -16px -16px; padding:12px 16px 16px;
-  background:linear-gradient(rgba(15,49,65,0), var(--acqua) 18%); border-radius:0 0 var(--r-l) var(--r-l)}
+  background:linear-gradient(rgba(26,38,38,0), var(--acqua) 18%); border-radius:0 0 var(--r-l) var(--r-l)}
 .barra-azione .anteprima{flex:1; min-width:0; flex-direction:column; align-items:flex-start; gap:0; padding:7px 12px}
 .barra-azione .anteprima .testo{font-size:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%}
 .barra-azione .anteprima .metri{font-size:19px}
@@ -164,8 +164,8 @@ textarea{min-height:150px; line-height:1.6; resize:vertical; font-family:var(--f
 .zone-seduta b{font-family:var(--f-num); font-weight:600; font-size:15px}
 .stili-seduta{margin-top:6px; font-size:13px; color:var(--nebbia)}
 .quadrante-vuoto{color:var(--nebbia); font-size:14.5px}
-.tacca{stroke:#3B6577} .tacca.grande{stroke:#7FA3B1}
-.numero-quadrante{font-family:var(--f-num); font-weight:600; fill:#7FA3B1; font-size:13px}
+.tacca{stroke:#545456} .tacca.grande{stroke:#9A9893}
+.numero-quadrante{font-family:var(--f-num); font-weight:600; fill:#9A9893; font-size:13px}
 .numero-quadrante.cima{fill:var(--piastrella); font-size:15px; font-weight:700}
 
 /* ============ barre con traguardo: mix del giorno e zone della settimana ============ */
@@ -210,10 +210,10 @@ textarea{min-height:150px; line-height:1.6; resize:vertical; font-family:var(--f
   border-left:2px solid var(--en1); font-size:14px; color:var(--piastrella); line-height:1.4}
 .nota-letta small{font-size:12px; color:var(--nebbia); flex:none}
 .avviso-riga{display:block; margin-top:5px; font-size:12.5px; color:var(--en2)}
-.lettura-testo li.non-letta .desc small{display:block; font-size:12.5px; color:#F2A7B0; margin-bottom:4px}
+.lettura-testo li.non-letta .desc small{display:block; font-size:12.5px; color:#F2A596; margin-bottom:4px}
 .lettura-testo li.non-letta code{white-space:pre-wrap; overflow-wrap:anywhere; display:inline-block}
 .serie li.inmodifica{background:var(--acqua-alta); border-radius:var(--r-m); padding-left:8px; padding-right:4px}
-.serie li.inmodifica .desc b{color:#9FE3F7}
+.serie li.inmodifica .desc b{color:#F6C08F}
 /* scheda da bordo vasca */
 .serie li.blocco{display:flex; justify-content:space-between; align-items:baseline; padding:18px 0 4px; border-top:none}
 .serie li.blocco:first-child{padding-top:2px}
@@ -233,7 +233,7 @@ textarea{min-height:150px; line-height:1.6; resize:vertical; font-family:var(--f
 .corsia{position:relative; height:30px; border-radius:15px; background:var(--linea); display:flex; overflow:visible}
 .corsia .seg{height:100%}
 .corsia .seg:first-child{border-radius:15px 0 0 15px}
-.corsia .prog{opacity:.45; background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.55) 0 3px,transparent 3px 8px)}
+.corsia .prog{opacity:.45; background-image:repeating-linear-gradient(45deg,rgba(243,234,226,.55) 0 3px,transparent 3px 8px)}
 .traguardo{position:absolute; top:-7px; bottom:-7px; width:3px; margin-left:-1.5px; background:var(--piastrella); border-radius:2px}
 .traguardo::before, .traguardo::after{content:""; position:absolute; left:-6px; width:15px; height:3px; background:var(--piastrella); border-radius:2px}
 .traguardo::before{top:0} .traguardo::after{bottom:0}
@@ -265,14 +265,14 @@ textarea{min-height:150px; line-height:1.6; resize:vertical; font-family:var(--f
 .grafico{position:relative}
 .grafico .colonne{display:flex; align-items:flex-end; gap:2px; height:190px; border-bottom:2px solid var(--linea)}
 .grafico .col{flex:1; height:100%; display:flex; align-items:flex-end; position:relative; cursor:pointer; min-width:0}
-.grafico .col .piano{position:absolute; left:0; right:0; bottom:0; border:1px solid #3D6677; border-bottom:none; border-radius:3px 3px 0 0; background:rgba(141,176,188,.08)}
+.grafico .col .piano{position:absolute; left:0; right:0; bottom:0; border:1px solid #5E5F61; border-bottom:none; border-radius:3px 3px 0 0; background:rgba(169,168,162,.08)}
 .grafico .col .fatto{position:relative; width:100%; display:flex; flex-direction:column-reverse; border-radius:3px 3px 0 0; overflow:hidden}
 .grafico .col.corrente::after{content:""; position:absolute; left:50%; bottom:-10px; width:6px; height:6px; margin-left:-3px; border-radius:50%; background:var(--piastrella)}
 .grafico .col:hover .piano{border-color:var(--piastrella)}
 .grafico .fasce{display:flex; gap:2px; margin-top:14px}
 .grafico .fascia{height:22px; border-radius:4px; display:flex; align-items:center; justify-content:center;
   font-family:var(--f-num); font-size:12.5px; font-weight:600; color:var(--nebbia); background:var(--linea); min-width:0; overflow:hidden}
-.grafico .fascia:nth-child(even){background:#0C2734}
+.grafico .fascia:nth-child(even){background:#121B1C}
 .grafico .assi{display:flex; justify-content:space-between; margin-top:6px; font-size:12px; color:var(--nebbia)}
 .mesocicli{list-style:none; margin:14px 0 0; padding:0; display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:6px 16px; font-size:13px; color:var(--nebbia)}
 .mesocicli b{font-family:var(--f-num); color:var(--piastrella); font-weight:600; margin-right:6px}
@@ -285,13 +285,203 @@ details.incolla textarea{margin-top:8px}
 .doc{margin-bottom:16px}
 .doc h3{font-size:19px; margin-bottom:4px}
 .doc p{margin:4px 0; font-size:14.5px; line-height:1.45}
-.doc .err{color:#F5A9B3} .doc .avv{color:#EBCB7E}
+.doc .err{color:#F2A596} .doc .avv{color:#F2C08A}
 .tempi-griglia{display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:10px}
 .campo.tempo input{font-family:var(--f-num); font-size:17px}
 
+/* ============ gruppo: traguardi, appuntamenti, fasi, documento ============ */
+:root{ --ob:#F7D9A8; --cat-a:#C23B4A; --cat-b:#F2A360; --cat-c:#B3B1AA; --prova:#66B2AA; }
+
+.g-riga1{display:flex; justify-content:space-between; align-items:flex-start; gap:14px}
+.g-nome{font-family:var(--f-num); font-size:36px; font-weight:700; line-height:1}
+.g-fase{margin-top:8px; display:flex; flex-wrap:wrap; align-items:center; gap:5px 9px; color:var(--nebbia); font-size:14.5px; line-height:1.4}
+.g-fase-nome{min-width:0}
+.g-vol{white-space:nowrap; font-family:var(--f-num); font-size:16px; font-weight:600; color:var(--piastrella)}
+.g-kind{display:inline-block; padding:0 8px; border-radius:20px; border:1px solid var(--bordo); color:var(--piastrella);
+  font-family:var(--f-num); font-size:14px; font-weight:600; line-height:1.55}
+.g-kind.k-scarico{border-color:#4F9A94; background:rgba(79,154,148,.16)}
+.g-kind.k-minitaper, .g-kind.k-taper{border-color:#B06A45; background:rgba(192,116,80,.18); color:var(--ob)}
+.g-sett{text-align:right; font-family:var(--f-num); line-height:1; flex:none}
+.g-sett b{font-size:48px; font-weight:700}
+.g-sett span{font-size:20px; color:var(--nebbia); font-weight:600; margin-left:4px}
+.g-sett small{display:block; font-family:var(--f-testo); font-size:12.5px; color:var(--nebbia); margin-top:6px}
+.g-info{margin-top:14px; font-size:14px; color:var(--piastrella); line-height:1.5}
+.g-info > div + div{margin-top:3px}
+.g-et{font-family:var(--f-num); font-size:12.5px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--nebbia); margin-right:4px}
+
+/* vista: completa o come la vedono i collaboratori */
+.g-vista{margin-bottom:10px}
+.g-vista-riga{display:flex; align-items:center; justify-content:space-between; gap:12px}
+.g-vista-et{font-family:var(--f-num); font-size:12.5px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--nebbia)}
+.g-vista .chips{flex-wrap:nowrap}
+.g-vista .nota{margin:8px 0 0}
+
+/* la stagione in una riga: i segni vicini salgono di corsia, ognuno con il suo filo fino alla fascia */
+.g-linea{--corsie:1; position:relative; margin-top:20px; padding-top:calc(var(--corsie) * 14px + 8px)}
+.g-segni{position:absolute; left:0; right:0; top:0; height:calc(var(--corsie) * 14px + 8px)}
+.g-segno{--sc:var(--nebbia); position:absolute; bottom:calc(3px + var(--alt,0) * 14px); width:10px; height:10px; margin-left:-5px}
+.g-segno::before{content:""; position:absolute; inset:0; border-radius:50%; background:var(--sc); box-shadow:0 0 0 2px var(--acqua); box-sizing:border-box}
+.g-segno::after{content:""; position:absolute; left:50%; top:100%; width:1px; margin-left:-.5px; height:calc(var(--alt,0) * 14px + 3px); background:var(--sc); opacity:.5}
+.g-segno.A{--sc:var(--cat-a)} .g-segno.B{--sc:var(--cat-b)} .g-segno.C{--sc:var(--cat-c)}
+.g-segno.prova{--sc:var(--prova)}
+.g-segno.prova::before{background:var(--acqua); border:2px solid var(--prova); box-shadow:none}
+.g-segno.ob{--sc:var(--ob)}
+.g-segno.ob::before{inset:-2px; border-radius:3px; transform:rotate(45deg); background:var(--ob)}
+.g-segno.fisso{position:relative; bottom:auto; display:inline-block; margin:0 7px 0 0; flex:none; vertical-align:-1px}
+.g-segno.fisso::after{display:none}
+.g-segno.fisso.ob{margin:0 9px 0 3px; width:10px; height:10px}
+.g-fasce{display:flex; gap:2px; height:14px}
+.g-fasce span, .g-fase-sw{background:var(--fc,#3F827D)}
+.g-fasce span{border-radius:3px; min-width:2px}
+.f-prep{--fc:#3F827D} .f-taper{--fc:#C07450} .f-trans{--fc:#6A6B69} .f-comune{--fc:#4B6A68}
+.g-fasce .passata{opacity:.5}
+.g-fasce .ora{box-shadow:0 0 0 2px var(--piastrella); position:relative; filter:brightness(1.3)}
+.g-oggi{position:absolute; top:calc(var(--corsie) * 14px - 6px); bottom:19px; z-index:7; width:2px; margin-left:-1px; background:var(--piastrella); border-radius:1px; pointer-events:none}
+.g-oggi::before{content:""; position:absolute; top:-4px; left:-3px; width:8px; height:8px; border-radius:50%; background:var(--piastrella)}
+.g-mesi{position:relative; height:16px; margin-top:5px}
+.g-mesi span{position:absolute; font-family:var(--f-num); font-size:12px; font-weight:600; color:var(--nebbia); line-height:1}
+.g-leg{margin-top:12px; gap:6px 14px; font-size:12.5px}
+.g-leg span{gap:0}
+
+/* traguardi */
+.g-traguardi{display:grid; gap:8px}
+.g-tr{display:grid; grid-template-columns:minmax(0,1fr) auto; gap:14px; align-items:center; width:100%; text-align:left; padding:13px 16px 13px 14px;
+  border-radius:var(--r-l); background:var(--acqua); border:1px solid var(--bordo); border-left:4px solid var(--nebbia); color:inherit}
+.g-tr:hover{background:var(--acqua-alta)}
+.g-tr.t-obiettivo{border-left-color:var(--ob)} .g-tr.t-test{border-left-color:var(--prova)}
+.g-tr.t-gara.cat-A{border-left-color:var(--cat-a)} .g-tr.t-gara.cat-B{border-left-color:var(--cat-b)}
+.g-tr-testo{display:flex; flex-direction:column; min-width:0}
+.g-tr-et{font-family:var(--f-num); font-size:12.5px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--nebbia)}
+.g-tr-nome{font-family:var(--f-num); font-size:22px; font-weight:700; line-height:1.15; margin-top:1px; overflow-wrap:anywhere}
+.g-tr-data{font-size:13px; color:var(--nebbia); margin-top:2px}
+.g-tr-num{text-align:right; font-family:var(--f-num); line-height:1; white-space:nowrap}
+.g-tr-num b{font-size:42px; font-weight:700; display:block}
+.g-tr-num b.parola{font-size:21px; line-height:1.1}
+.g-tr-num small{display:block; font-family:var(--f-testo); font-size:12.5px; color:var(--nebbia); margin-top:3px}
+.g-tr-num.adesso b{color:var(--en2)}
+
+/* elenco appuntamenti */
+.g-eventi{list-style:none; margin:0; padding:0}
+.g-ev{display:grid; grid-template-columns:32px minmax(0,1fr) auto; gap:12px; align-items:start; padding:11px 0;
+  border-top:1px solid rgba(255,255,255,.06); cursor:pointer}
+.g-ev:first-child{border-top:none; padding-top:2px}
+.g-ev:hover .g-ev-corpo b{color:#FFF8F0}
+.g-badge{margin-top:1px; width:30px; height:30px; border-radius:9px; display:grid; place-items:center; background:var(--cat-c);
+  color:var(--linea); font-family:var(--f-num); font-weight:700; font-size:17px; line-height:1}
+.g-badge.A{background:var(--cat-a); color:#FFF8F0} .g-badge.B{background:var(--cat-b)}
+.g-badge.prova{background:transparent; border:2px solid var(--prova); color:var(--prova)}
+.g-badge.altro{background:var(--linea); color:var(--nebbia)}
+.g-badge.ob{box-shadow:0 0 0 2px var(--acqua), 0 0 0 4px var(--ob)}
+.g-ev-corpo{display:flex; flex-direction:column; min-width:0}
+.g-ev-corpo b{font-family:var(--f-num); font-size:18px; font-weight:600; line-height:1.2; overflow-wrap:anywhere}
+.g-ev-corpo small{font-size:13px; color:var(--nebbia); line-height:1.35; margin-top:1px}
+.g-ev-corpo small.g-dett{font-size:12.5px; opacity:.85}
+.g-ev-quando{font-family:var(--f-num); font-size:15px; font-weight:600; color:var(--nebbia); text-align:right; white-space:nowrap; padding-top:3px}
+.g-ev-quando.adesso{color:var(--en2)}
+.g-ev.prossimo .g-ev-quando{color:var(--piastrella)}
+.g-ev.passato{opacity:.45}
+.g-tutti{width:100%; margin-top:12px}
+
+/* fasi */
+.g-fasi{list-style:none; margin:0; padding:0}
+.g-fase-riga{display:grid; grid-template-columns:6px minmax(0,1fr); gap:13px; padding:12px 0; border-top:1px solid rgba(255,255,255,.06); cursor:pointer}
+.g-fase-riga:first-child{border-top:none; padding-top:2px}
+.g-fase-sw{border-radius:3px}
+.g-fase-riga.passata{opacity:.55}
+.g-fase-riga.ora .g-fase-tit b{color:#FFF8F0}
+.g-fase-riga.ora .g-fase-tit span{color:var(--piastrella); font-weight:600}
+.g-fase-tit{display:flex; justify-content:space-between; align-items:baseline; gap:10px}
+.g-fase-tit b{font-family:var(--f-num); font-size:18px; font-weight:600; line-height:1.2}
+.g-fase-tit span{font-family:var(--f-num); font-size:14px; font-weight:500; color:var(--nebbia); white-space:nowrap}
+.g-fase-sub{font-size:13px; color:var(--nebbia); margin-top:1px}
+.g-tid{display:flex; gap:2px; height:7px; margin-top:9px}
+.g-tid i{display:block; border-radius:3px; min-width:2px}
+.g-tid-l{font-size:12px; color:var(--nebbia); margin-top:4px}
+
+/* dal documento */
+.g-doc{padding:6px 16px}
+.titolo-sez small.datato{color:var(--en2)}
+.g-voce{border-top:1px solid rgba(255,255,255,.06)}
+.g-voce:first-child{border-top:none}
+.g-voce summary{list-style:none; cursor:pointer; display:grid; grid-template-columns:minmax(0,1fr) 20px; column-gap:10px; padding:12px 0; position:relative}
+.g-voce summary::-webkit-details-marker{display:none}
+.g-voce summary::after{content:"+"; grid-column:2; grid-row:1; font-family:var(--f-num); font-size:22px; line-height:1; color:var(--nebbia); text-align:center}
+.g-voce[open] summary::after{content:"–"}
+.g-voce summary .et{grid-column:1; font-family:var(--f-num); font-size:18px; font-weight:600; line-height:1.2}
+.g-voce summary .an{grid-column:1; color:var(--nebbia); font-size:13.5px; line-height:1.4; margin-top:2px;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+.g-voce[open] summary .an{display:none}
+.g-voce .corpo{padding:0 0 14px; font-size:14.5px; line-height:1.6; overflow-wrap:anywhere}
+.g-voce .corpo strong, .g-doc strong{color:#FFF8F0; font-weight:600}
+.g-voce.avv{border-left:3px solid var(--en2); padding-left:12px; margin-left:-4px}
+
+.g-doc{--tab-pad:0}
+.g-tab-tit{font-family:var(--f-num); font-size:17px; font-weight:600; margin:12px 0 8px}
+.g-filtri{margin-bottom:10px}
+.g-scorri{overflow-x:auto; -webkit-overflow-scrolling:touch; border:1px solid var(--bordo); border-radius:var(--r-m); background:var(--linea)}
+.g-tabella{border-collapse:separate; border-spacing:0; width:max-content; min-width:100%}
+.g-tabella th, .g-tabella td{padding:9px 13px; text-align:left; vertical-align:top; white-space:nowrap;
+  border-top:1px solid rgba(255,255,255,.06); font-family:var(--f-num); font-size:17px; font-weight:600; line-height:1.3}
+.g-tabella thead th{border-top:none; font-family:var(--f-testo); font-size:12.5px; font-weight:600; color:var(--nebbia);
+  background:var(--acqua-alta); vertical-align:bottom}
+.g-tabella tbody th{position:sticky; left:0; z-index:1; background:#253535; border-right:1px solid var(--bordo)}
+.g-tabella thead th:first-child{position:sticky; left:0; z-index:2}
+.g-tabella .lungo{white-space:normal; min-width:13rem; max-width:22rem; font-family:var(--f-testo); font-size:13.5px; font-weight:400; line-height:1.45}
+.g-tabella .g-sub{display:none}
+.g-tabella strong{color:#FFF8F0; font-weight:700}
+.g-tabella em{color:var(--nebbia)}
+.g-tabella code{font-size:.95em}
+/* chi vede una tabella */
+.g-vis{display:flex; align-items:center; gap:9px; margin:0 0 8px; color:var(--nebbia); font-size:13px}
+.g-vis-sw{display:flex; align-items:center; gap:10px; padding:4px 0; min-height:34px; background:none; border:none; color:inherit; font:inherit; text-align:left; cursor:pointer}
+.g-sw{position:relative; flex:none; width:36px; height:20px; border-radius:20px; background:var(--linea); border:1px solid var(--bordo); transition:background .15s, border-color .15s}
+.g-sw i{position:absolute; top:2px; left:2px; width:14px; height:14px; border-radius:50%; background:var(--nebbia); transition:transform .15s, background .15s}
+.g-vis.on .g-sw{background:rgba(102,178,170,.22); border-color:var(--prova)}
+.g-vis.on .g-sw i{transform:translateX(16px); background:var(--prova)}
+.g-vis.on{color:var(--prova)}
+.g-vis-pallino{flex:none; width:8px; height:8px; border-radius:50%; background:var(--nebbia)}
+.g-vis.on .g-vis-pallino{background:var(--prova)}
+.g-solo{display:inline-block; margin-left:8px; padding:0 8px; border:1px solid var(--bordo); border-radius:20px; font-family:var(--f-testo);
+  font-size:11.5px; font-weight:600; color:var(--nebbia); line-height:1.6; vertical-align:2px; white-space:nowrap}
+.g-altre{margin-top:14px; border-top:1px solid rgba(255,255,255,.06); padding-top:4px}
+.g-altre summary{cursor:pointer; padding:10px 0; font-family:var(--f-num); font-size:16.5px; font-weight:600; color:var(--nebbia); line-height:1.3}
+.g-altre[open] summary{color:var(--piastrella); margin-bottom:4px}
+.g-altre > .g-tab{padding-bottom:12px}
+
+/* tabelle con molte colonne: su telefono ogni riga è una scheda, senza colonne fuori schermo */
+@media (max-width:640px){
+  .g-scorri.molte{overflow:visible; border:none; background:none; border-radius:0}
+  .g-tabella.molte{display:block; width:auto; min-width:0}
+  .g-tabella.molte thead{display:none}
+  .g-tabella.molte tbody{display:grid; gap:8px}
+  .g-tabella.molte tr{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:2px 14px; padding:11px 13px 9px;
+    background:var(--acqua-alta); border:1px solid var(--bordo); border-radius:var(--r-m)}
+  .g-tabella.molte tbody th{grid-column:1 / -1; position:static; background:none; border:none; padding:0 0 6px;
+    font-size:19px; white-space:normal; overflow-wrap:anywhere}
+  .g-tabella.molte td{display:block; min-width:0; padding:4px 0 5px; border-top:none; white-space:normal; overflow-wrap:anywhere; font-size:17px}
+  .g-tabella.molte td::before{content:attr(data-et); display:block; font-family:var(--f-testo); font-size:11.5px; font-weight:600;
+    letter-spacing:.02em; color:var(--nebbia); margin-bottom:1px}
+  .g-tabella.molte td:empty, .g-tabella.molte td.fusa{display:none}
+  .g-tabella.molte .g-sub{display:inline-block; margin-left:9px; padding:0 9px; border:1px solid var(--bordo); border-radius:20px;
+    font-size:15px; line-height:1.6; vertical-align:2px; color:var(--piastrella); background:var(--linea)}
+  .g-tabella.molte.corte tr{grid-template-columns:repeat(3,minmax(0,1fr)); gap:2px 10px}
+  .g-tabella.molte.corte td{font-size:18px}
+  .g-tabella.molte td.lungo{grid-column:1 / -1; min-width:0; max-width:none; font-size:14px}
+  .g-tabella.molte tbody th.lungo{font-family:var(--f-num); font-weight:600; font-size:19px; line-height:1.25; min-width:0; max-width:none}
+}
+@media (min-width:980px){
+  .g-nome{font-size:42px}
+  .g-tr-nome{font-size:24px}
+}
+@media (max-width:380px){
+  .g-nome{font-size:30px}
+  .g-sett b{font-size:40px}
+  .g-tr-num b{font-size:36px}
+}
+
 /* ============ navigazione ============ */
 nav{position:fixed; left:0; right:0; bottom:0; z-index:30; display:flex; justify-content:center;
-  background:rgba(6,23,34,.94); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+  background:rgba(13,19,19,.94); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
   border-top:1px solid rgba(255,255,255,.06); padding-bottom:env(safe-area-inset-bottom)}
 nav .nav-dentro{display:flex; width:100%; max-width:560px}
 nav button{flex:1; height:var(--barra-nav); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
@@ -321,6 +511,20 @@ nav button[aria-pressed="true"] svg{stroke:var(--en1)}
 }
 @media (prefers-reduced-motion:reduce){ *{transition:none !important} }
 
+
+/* ============ tema: grafite e rame ============ */
+:root{ --rame:#C07450; --sabbia:#F2A360; --inchiostro:#0D1313; }
+:focus-visible{outline-color:var(--sabbia)}
+.primario{background:var(--sabbia); color:var(--inchiostro)}
+.frecce #copia.fatto{background:var(--sabbia); color:var(--inchiostro); border-color:var(--sabbia)}
+nav button[aria-pressed="true"]{color:var(--sabbia)}
+nav button[aria-pressed="true"] svg{stroke:var(--sabbia)}
+.gruppi button[aria-pressed="true"]{border-color:var(--rame)}
+.gruppi button[aria-pressed="true"] .corsietta i{background:var(--sabbia)}
+.chip[data-v="sp"][aria-pressed="true"]{color:#FFF8F0}
+.primario[disabled]{opacity:1; background:var(--acqua-alta); color:var(--tenue); box-shadow:inset 0 0 0 1px var(--bordo)}
+::selection{background:rgba(242,163,96,.32); color:var(--piastrella)}
+html{scrollbar-color:var(--bordo) var(--fondale)}
 </style>
 </head>
 <body>
@@ -387,7 +591,7 @@ nav button[aria-pressed="true"] svg{stroke:var(--en1)}
             <textarea id="testo" spellcheck="false" placeholder="wu 1x400 sl en1
 tec 12x50 sl en1 scull // front/mid-scull, focus catch
 pre 4x100 sl en1 build p1:50
-main 6x200 sl en2 p2:55 // Greta 2:36, le altre 2:45
+main 6x200 sl en2 p2:55 // Atleta 1 2:36, gli altri 2:45
 comp 8x100 sl en1 gambe tavola
 def 1x200 mx en1 // social"></textarea>
             <div class="anteprima" style="margin-top:12px">
@@ -530,6 +734,11 @@ def 1x200 mx en1 // social"></textarea>
     </div>
   </section>
 
+  <!-- ============ GRUPPO ============ -->
+  <section class="vista" id="v-gruppo">
+    <div class="colonna" id="g-radice"></div>
+  </section>
+
   <!-- ============ DATI ============ -->
   <section class="vista" id="v-dati">
     <div class="colonna">
@@ -549,11 +758,13 @@ def 1x200 mx en1 // social"></textarea>
             <button class="primario" id="sync-ora">Sincronizza</button>
             <button class="secondario" id="sync-salva">Salva indirizzo</button>
           </div>
-          <div class="etichetta" style="margin-top:16px"><b>Questo dispositivo</b></div>
+          <div class="etichetta" style="margin-top:16px" id="e-ruolo"><b>Questo dispositivo</b></div>
           <div class="chips" id="c-ruolo"></div>
           <p class="nota">La sincronizzazione unisce: le serie aggiunte dagli altri dispositivi arrivano,
             le tue partono, quelle cancellate restano cancellate ovunque. Le correzioni si fanno nell'app:
             il foglio è la copia da leggere e pivotare.</p>
+          <p class="nota">Con la parola d'ordine dei collaboratori l'app è di sola consultazione e mostra
+            solo le informazioni pratiche dei gruppi: traguardi, appuntamenti e andature.</p>
         </div>
       </div>
 
@@ -632,6 +843,8 @@ def 1x200 mx en1 // social"></textarea>
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h18M3 17h18M5 12h12M17 9.5v5"/></svg>Settimana</button>
     <button data-vista="v-stagione" aria-pressed="false">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M6.5 20v-6M10.5 20V8M14.5 20v-9M18.5 20V5"/></svg>Stagione</button>
+    <button data-vista="v-gruppo" aria-pressed="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3.5 19c0-3.2 2.4-5.2 5.5-5.2s5.5 2 5.5 5.2"/><circle cx="17" cy="9.5" r="2.3"/><path d="M16.3 14.2c2.5.2 4.2 1.9 4.2 4.8"/></svg>Gruppo</button>
     <button data-vista="v-dati" aria-pressed="false">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>Dati</button>
   </div>
@@ -678,7 +891,7 @@ const Memoria = (() => {
 })();
 
 const K_SERIE = "vasca_serie_v1", K_PIANO = "vasca_piano_v1", K_PREF = "vasca_pref_v1",
-      K_CEST = "vasca_cestino_v1", K_SYNC = "vasca_sync_v1", K_GIORNI = "vasca_giorni_v1";
+      K_CEST = "vasca_cestino_v1", K_SYNC = "vasca_sync_v1", K_GIORNI = "vasca_giorni_v1", K_SCHEDE = "vasca_schede_v1";
 
 let serie = Memoria.leggi(K_SERIE, []);
 let piano = Memoria.leggi(K_PIANO, null) || PIANO_SEED.slice();
@@ -686,6 +899,8 @@ let piano = Memoria.leggi(K_PIANO, null) || PIANO_SEED.slice();
 // caricamento del documento comune sa quali sostituire
 const giorniIncorporati = () => GIORNI_SEED.map(x => Object.assign({}, x));
 let giorni = Memoria.leggi(K_GIORNI, null) || giorniIncorporati();
+// stato in vigore e andature di ogni gruppo: arrivano dai documenti o dal foglio, mai dalla pagina
+let schede = Memoria.leggi(K_SCHEDE, null) || {};
 let pref  = Memoria.leggi(K_PREF, {gruppo:"cadetti"});
 let eliminati = Memoria.leggi(K_CEST, []);
 let sync  = Memoria.leggi(K_SYNC, {url:"", token:"", ultimo:""});
@@ -696,6 +911,7 @@ const salvaPref  = () => Memoria.scrivi(K_PREF, pref);
 const salvaCest  = () => Memoria.scrivi(K_CEST, eliminati);
 const salvaSync  = () => Memoria.scrivi(K_SYNC, sync);
 const salvaGiorni = () => Memoria.scrivi(K_GIORNI, giorni);
+const salvaSchede = () => Memoria.scrivi(K_SCHEDE, schede);
 
 function butta(ids){
   const t = Date.now();
@@ -728,7 +944,7 @@ const nomeBlocco= b => (BLOCCHI.find(x => x[0]===b)||["",b])[1];
 function coloreDa(id){
   let h = 0; const t = String(id);
   for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) % 360;
-  return "hsl(" + h + " 42% 56%)";
+  return "hsl(" + h + " 30% 64%)";
 }
 function coloreVar(id){
   if (!/^[a-z0-9_-]+$/i.test(String(id))) return coloreDa(id);
@@ -1133,6 +1349,7 @@ function chips(cont, elenco, attivo, click, cls, agg){
     const b = document.createElement("button");
     b.className = "chip " + (cls||"");
     b.textContent = v.et;
+    if (typeof v.val === "string") b.setAttribute("data-v", v.val);
     b.setAttribute("aria-pressed", attivo(v.val) ? "true" : "false");
     if (v.col && attivo(v.val)) b.style.background = v.col, b.style.borderColor = v.col;
     else b.style.background = "", b.style.borderColor = "";
@@ -1716,11 +1933,220 @@ function lpScegliGiornate(tabelle, multi){
 }
 
 /* ---------- ingresso unico ---------- */
+/* ============ scheda del gruppo: dal documento ============
+   Dal documento di ogni gruppo si leggono tre cose, tutte facoltative:
+   lo stato "In vigore oggi" in cima, la composizione e la vasca (Fotografia del gruppo),
+   le tabelle di "Andature e partenze". Quello che non si trova resta com'è. */
+
+// wiki-link e link Markdown diventano testo; grassetto, corsivo e codice restano per il disegno
+function mdPulisci(t){
+  return String(t == null ? "" : t)
+    .replace(/\\\|/g, "|")
+    .replace(/\[\[([^\]|]*)\|([^\]]*)\]\]/g, "$2")
+    .replace(/\[\[([^\]]*)\]\]/g, (m, x) => x.replace(/^.*[\/#]/, ""))
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    .replace(/<br\s*\/?>/gi, " ")
+    .replace(/\s+/g, " ").trim();
+}
+const mdSemplice = t => mdPulisci(t).replace(/[*`]+/g, "");
+function lpTronca(t, max){
+  return t.length <= max ? t : t.slice(0, max).replace(/\s+\S*$/, "") + "…";
+}
+// celle di una riga di tabella; la barra con la sbarra rovesciata (\|) non separa
+function lpCelleMd(riga){
+  const c = riga.trim().replace(/\\\|/g, "\u0001").split("|");
+  if (c.length && c[0].trim() === "") c.shift();
+  if (c.length && c[c.length - 1].trim() === "") c.pop();
+  return c.map(x => mdPulisci(x.replace(/\u0001/g, "|")));
+}
+// le righe dentro un blocco di codice non sono né intestazioni né tabelle
+function lpFence(righe){
+  let dentro = false;
+  return righe.map(r => { if (/^\s*```/.test(r)){ dentro = !dentro; return true; } return dentro; });
+}
+// la prima sezione (livello 2-4) il cui titolo verifica rx: righe da..a (a escluso)
+function lpSezioneMd(righe, rx, fence){
+  for (let i = 0; i < righe.length; i++){
+    if (fence[i]) continue;
+    const h = righe[i].match(/^(#{2,4})\s+(.*)$/);
+    if (!h || !rx.test(h[2])) continue;
+    let a = righe.length;
+    for (let j = i + 1; j < righe.length; j++){
+      if (fence[j]) continue;
+      const k = righe[j].match(/^(#{1,6})\s/);
+      if (k && k[1].length <= h[1].length){ a = j; break; }
+    }
+    return {da: i + 1, a: a, titolo: mdSemplice(h[2])};
+  }
+  return null;
+}
+// prima frase di un'annotazione: fino al punto, al trattino lungo o alla nota di correzione
+function lpPrimaFrase(t, max){
+  let s = mdSemplice(t).replace(/\s*\([^()]{60,}\)/g, "");
+  const m = s.match(/^(.+?)(?:\.\s+(?=[A-ZÀ-ÖØ-Ý]|✅|⚠)|\s[—–]\s|\s(?=✅|⚠|🔁))/);
+  if (m) s = m[1];
+  s = lpTronca(s, max).replace(/[\s.,;:]+$/, "");
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// il riquadro "In vigore oggi — aggiornato al …" e i suoi paragrafi "**Etichetta:** testo"
+function lpStato(righe, fence){
+  const i = righe.findIndex((r, k) => !fence[k] && /^>\s*\**\s*In vigore\b/i.test(r));
+  if (i < 0) return null;
+  const d = righe[i].match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  const agg = d ? d[3] + "-" + String(d[2]).padStart(2, "0") + "-" + String(d[1]).padStart(2, "0") : "";
+  const voci = [];
+  for (let j = i + 1; j < righe.length && /^>/.test(righe[j]); j++){
+    const t = righe[j].replace(/^>\s?/, "").trim();
+    if (!t) continue;
+    const e = t.match(/^([^A-Za-z0-9*\[]*)\*\*([^*]{2,100}?)\*\*(:?)\s*(.*)$/);
+    if (e && (/:\s*$/.test(e[2]) || e[3] === ":")){
+      voci.push({t: mdSemplice(e[2]).replace(/:\s*$/, ""), x: lpTronca(mdPulisci(e[4]), 1600), a: /⚠/.test(e[1]) ? 1 : 0});
+    } else if (voci.length){
+      const u = voci[voci.length - 1];
+      u.x = lpTronca(u.x + " " + mdPulisci(t), 1600);
+    } else {
+      voci.push({t: "", x: lpTronca(mdPulisci(t), 1600), a: 0});
+    }
+  }
+  return {agg: agg, voci: voci.filter(v => v.x)};
+}
+
+// "Composizione" e "Vasca" dalla Fotografia del gruppo: solo la prima frase
+function lpGruppoInfo(righe, fence){
+  const s = lpSezioneMd(righe, /Fotografia del gruppo/i, fence);
+  if (!s) return [];
+  const cerca = [["Composizione", /^\s*[-*]\s*\*\*Composizione:?\*\*:?\s*(.*)$/i],
+                 ["Vasca", /^\s*[-*]\s*\*\*Vasca\b[^*]*\*\*:?\s*(.*)$/i]];
+  const out = [];
+  cerca.forEach(c => {
+    for (let i = s.da; i < s.a; i++){
+      const m = righe[i].match(c[1]);
+      if (m && m[1]){ out.push({t: c[0], x: lpPrimaFrase(m[1], 230)}); break; }
+    }
+  });
+  return out;
+}
+
+// tutte le tabelle di una sezione, ognuna col suo titolo (riga in grassetto sopra, o intestazione)
+function lpTabelleMd(righe, da, a, fence, base){
+  const out = [];
+  let titolo = base || "", i = da;
+  while (i < a){
+    if (fence[i]){ i++; continue; }
+    const h = righe[i].match(/^(#{3,6})\s+(.*)$/);
+    if (h){ titolo = mdSemplice(h[2]); i++; continue; }
+    if (!/^\s*\|/.test(righe[i])){ i++; continue; }
+    const inizio = i;
+    let j = i; while (j < a && /^\s*\|/.test(righe[j])) j++;
+    i = j;
+    const blocco = righe.slice(inizio, j);
+    if (blocco.length < 3) continue;
+    const testa = lpCelleMd(blocco[0]), sep = lpCelleMd(blocco[1]);
+    if (testa.length < 2 || !sep.length || !sep.every(c => /^:?-{2,}:?$/.test(c))) continue;
+    let nome = titolo;
+    for (let k = inizio - 1; k >= da && inizio - k <= 3; k--){
+      if (!righe[k].trim()) continue;
+      const b = righe[k].match(/^\s*\*\*([^*]{4,140}?)\*\*/);
+      if (b) nome = mdSemplice(b[1]).replace(/[\s.:—–-]+$/, "");
+      break;
+    }
+    if (/^cosa cambia|storico|revisioni/i.test(nome)) continue;     // la storia delle modifiche non serve in vasca
+    const n = testa.length;
+    const corpo = blocco.slice(2).map(r => { const c = lpCelleMd(r); while (c.length < n) c.push(""); return c.slice(0, n); });
+    if (!corpo.length) continue;
+    // due tabelle sotto lo stesso titolo: la seconda si distingue dalle sue colonne
+    const prec = out[out.length - 1];
+    if (prec && prec.t === nome) nome = nome + " — " + testa.slice(1, 3).map(mdSemplice).join(", ");
+    out.push({t: nome, r: [testa].concat(corpo.slice(0, 60))});
+  }
+  return out;
+}
+
+function lpAndature(righe, fence){
+  const s = lpSezioneMd(righe, /Andature e partenze/i, fence);
+  if (!s) return [];
+  return lpTabelleMd(righe, s.da, s.a, fence, s.titolo.replace(/^[A-Z]\d?\s*[—–-]\s*/, "")).slice(0, 8);
+}
+
+// una scheda occupa una cella del foglio (50.000 caratteri): se è troppo lunga si tolgono le ultime tabelle
+function lpCompattaScheda(s){
+  const peso = () => JSON.stringify(s).length;
+  while (peso() > 42000 && s.tabelle.length > 1) s.tabelle.pop();
+  if (peso() > 42000) s.stato.forEach(v => { if (v.x.length > 900) v.x = lpTronca(v.x, 900); });
+  return s;
+}
+
+function lpScheda(righe, nomeFile){
+  const fence = lpFence(righe), avvisi = [];
+  const stato = lpStato(righe, fence);
+  const tabelle = lpAndature(righe, fence);
+  const gruppo = lpGruppoInfo(righe, fence);
+  tabelle.forEach((t, i) => { t.p = i === 0 ? 1 : 0; });          // p = 1: la vedono anche i collaboratori
+  if (righe.length > 150){            // un documento intero: se mancano i pezzi lo dico
+    if (!stato) avvisi.push("Non trovo il riquadro «In vigore oggi» in cima al documento: lo stato del gruppo resta com'è.");
+    if (!tabelle.length) avvisi.push("Non trovo tabelle nella sezione «Andature e partenze»: le andature restano come sono.");
+  }
+  return {scheda: lpCompattaScheda({v: 1, fonte: nomeFile || "", agg: stato ? stato.agg : "",
+            gruppo: gruppo, stato: stato ? stato.voci : [], tabelle: tabelle}), avvisi: avvisi};
+}
+
+/* ---------- chi vede cosa ----------
+   Ai collaboratori arrivano solo le informazioni pratiche: le tabelle aperte (p = 1; senza una scelta,
+   solo la prima) e senza le colonne che spiegano come si ricava un numero. Stato in vigore,
+   composizione e vasca restano al titolare. Lo stesso taglio lo fa lo script del foglio. */
+const COLONNA_RISERVATA = /^[\s*_`]*(derivazion|spiegazion|motivazion)/i;
+const tabPubblica = (t, i) => (t.p == null ? i === 0 : Number(t.p) === 1);
+function schedaPubblica(s){
+  const tabelle = [];
+  ((s && s.tabelle) || []).forEach((t, i) => {
+    if (!tabPubblica(t, i) || !t.r || !t.r.length) return;
+    const tieni = [];
+    t.r[0].forEach((c, k) => { if (k === 0 || !COLONNA_RISERVATA.test(c)) tieni.push(k); });
+    if (tieni.length < 2) return;
+    tabelle.push({t: t.t, p: 1, r: t.r.map(r => tieni.map(k => r[k]))});
+  });
+  return {v: 1, agg: (s && s.agg) || "", gruppo: [], stato: [], tabelle: tabelle};
+}
+const soloPubbliche = sc => Object.keys(sc || {}).reduce((o, g) => { o[g] = schedaPubblica(sc[g]); return o; }, {});
+
+// quello che il documento ha portato si aggiunge alla scheda in uso; i pezzi mancanti restano.
+// La scelta su chi vede una tabella resta legata al suo titolo: ricaricando il documento non si perde
+function unisciScheda(vecchia, nuova){
+  const s = Object.assign({v: 1}, vecchia || {});
+  if (nuova.stato.length){ s.stato = nuova.stato; s.agg = nuova.agg; s.fonte = nuova.fonte; }
+  if (nuova.tabelle.length){
+    const prec = (vecchia && vecchia.tabelle) || [];
+    s.tabelle = nuova.tabelle.map((t, i) => {
+      const o = prec.filter(x => x.t === t.t)[0];
+      const p = o && o.p != null ? o.p : (t.p != null ? t.p : (i === 0 ? 1 : 0));
+      return Object.assign({}, t, {p: p ? 1 : 0});
+    });
+  }
+  if (nuova.gruppo.length) s.gruppo = nuova.gruppo;
+  return s;
+}
+const firmaScheda = s => JSON.stringify([s.stato || [], s.tabelle || [], s.gruppo || []]);
+
+function descriviScheda(e){
+  const s = e.scheda;
+  if (!s || (!s.stato.length && !s.tabelle.length && !s.gruppo.length)) return "";
+  const vecchia = schede[e.gruppo];
+  const parti = [];
+  if (s.stato.length) parti.push("stato in vigore" + (s.agg ? " del " + gDataIt(s.agg) : "") + " (" + s.stato.length + " voci)");
+  if (s.tabelle.length) parti.push(s.tabelle.length + (s.tabelle.length === 1 ? " tabella" : " tabelle") + " di andature");
+  if (s.gruppo.length) parti.push("composizione e vasca");
+  const uguale = vecchia && firmaScheda(unisciScheda(vecchia, s)) === firmaScheda(vecchia);
+  return "Scheda del gruppo: " + parti.join(", ") + ". " +
+    (uguale ? "Identica a quella in uso."
+            : (vecchia && vecchia.agg ? "Cambia rispetto a quella in uso (" + gDataIt(vecchia.agg) + ")." : "Nuova."));
+}
+
 function leggiProgrammazione(testo, nomeFile){
   const righe = String(testo || "").replace(/\r/g, "").split("\n");
   const chi = lpGruppoDa(righe.join("\n"), nomeFile);
   const esito = {nomeFile: nomeFile || "", gruppo: chi.gruppo, multi: chi.multi,
-                 piano: [], giorni: [], avvisi: [], errori: []};
+                 piano: [], giorni: [], avvisi: [], errori: [], scheda: null};
 
   if (!chi.multi){
     if (!chi.gruppo){
@@ -1731,6 +2157,8 @@ function leggiProgrammazione(testo, nomeFile){
     esito.piano = p.piano; esito.errori = esito.errori.concat(p.errori); esito.avvisi = esito.avvisi.concat(p.avvisi);
     if (!p.piano.length)
       esito.errori.push("Non ho trovato la tabella settimana per settimana del piano.");
+    const sc = lpScheda(righe, nomeFile);
+    esito.scheda = sc.scheda; esito.avvisi = esito.avvisi.concat(sc.avvisi);
   }
 
   const lette = lpGiornate(righe, chi.gruppo, chi.multi), tab = lette.tabelle;
@@ -2076,6 +2504,7 @@ function mostraAnteprima(esiti){
       if (ridotte.length) doc.appendChild(p("Settimane con meno sedute: " +
         ridotte.map(r => r.w + " " + lpGiorniTesto(r.gg)).join(", ") + ". Il giorno di gara non riceve obiettivi."));
     }
+    if (!e.multi && e.scheda){ const d = descriviScheda(e); if (d) doc.appendChild(p(d)); }
 
     if (e.giorni.length){
       confrontaGiorni(e).forEach(c => {
@@ -2112,6 +2541,7 @@ function mostraAnteprima(esiti){
 function applicaProgrammazioni(){
   const buoni = inAttesa.filter(e => !e.errori.length);
   buoni.forEach(e => {
+    if (!e.multi && e.gruppo && e.scheda) schede[e.gruppo] = unisciScheda(schede[e.gruppo], e.scheda);
     if (!e.multi && e.piano.length)
       piano = piano.filter(r => r.g !== e.gruppo).concat(e.piano.map(compatta));
     if (!e.giorni.length) return;                 // niente giornate nel documento: tengo le attuali
@@ -2134,7 +2564,7 @@ function applicaProgrammazioni(){
   giorni = Object.keys(mappa).map(k => mappa[k]);
 
   pref.pianoTs = Date.now();
-  salvaPref(); salvaPiano(); salvaGiorni(); ricostruisciModelli();
+  salvaPref(); salvaPiano(); salvaGiorni(); salvaSchede(); ricostruisciModelli();
   inAttesa = [];
   const box = document.getElementById("anteprima-md"); box.hidden = true; box.innerHTML = "";
   disegnaTutto();
@@ -2151,7 +2581,8 @@ function statoProgrammazioni(){
       " m; giornate tipo nelle settimane " + elencoSett(sett) + ". "
     : "Nessun piano per questo gruppo. ") +
     (pref.pianoTs ? "Ultimo caricamento: " + new Date(pref.pianoTs).toLocaleString("it-IT") + "."
-                  : "Dati incorporati nell'app.");
+                  : "Dati incorporati nell'app.") +
+    (schede[g] && schede[g].agg ? " Scheda del gruppo: stato in vigore del " + gDataIt(schede[g].agg) + "." : "");
 }
 
 function leggiFileMd(elenco){
@@ -2166,7 +2597,7 @@ function leggiFileMd(elenco){
 }
 
 function ripristinaIncorporate(){
-  if (!confirm("Torno al piano e alle giornate tipo incorporati nell'app, scartando i caricamenti fatti. Le serie non si toccano.")) return;
+  if (!confirm("Torno al piano e alle giornate tipo incorporati nell'app, scartando i caricamenti fatti. Le serie e le schede dei gruppi non si toccano.")) return;
   piano = PIANO_SEED.slice(); giorni = giorniIncorporati();
   pref.pianoTs = Date.now();
   salvaPref(); salvaPiano(); salvaGiorni(); ricostruisciModelli(); disegnaTutto();
@@ -2175,7 +2606,11 @@ function ripristinaIncorporate(){
 
 /* ============ ruolo del dispositivo ============ */
 function applicaRuolo(){
+  const coll = sync.ruolo === "collab";
+  if (coll) sync.sola = true;                  // con la parola d'ordine dei collaboratori si legge e basta
   const sola = !!sync.sola;
+  document.getElementById("e-ruolo").hidden = coll;
+  document.getElementById("c-ruolo").hidden = coll;
   document.body.classList.toggle("sola", sola);
   document.getElementById("sez-piano").hidden = sola;
   document.getElementById("sez-azzera").hidden = sola;
@@ -2198,7 +2633,8 @@ function statoSync(msg){
   el.textContent = !sync.url
     ? "Non collegato. Incolla qui sotto l'indirizzo dell'app web e la parola d'ordine dello script."
     : (sync.ultimo
-        ? (sync.sola ? "Solo consultazione. Ultimo aggiornamento: " : "Ultima sincronizzazione: ") +
+        ? (sync.ruolo === "collab" ? "Accesso collaboratore, solo consultazione. Ultimo aggiornamento: "
+            : sync.sola ? "Solo consultazione. Ultimo aggiornamento: " : "Ultima sincronizzazione: ") +
           new Date(sync.ultimo).toLocaleString("it-IT")
         : "Collegato, mai sincronizzato.");
 }
@@ -2208,6 +2644,8 @@ function statoSync(msg){
 function adottaConfig(c){
   if (Array.isArray(c.piano) && c.piano.length) piano = c.piano;
   if (Array.isArray(c.giorni)) giorni = c.giorni;
+  // le schede di un gruppo non arrivate dal foglio restano quelle che ho
+  if (c.schede && Object.keys(c.schede).length) schede = Object.assign({}, schede, c.schede);
   const v = c.voci || {};
   pref.voci = pref.voci || {};
   Object.keys(v).forEach(cat => {
@@ -2217,7 +2655,7 @@ function adottaConfig(c){
   if (c.ritmi) pref.ritmi = c.ritmi;          // impostazioni: valgono quelle del PC
   if (c.slot) pref.slot = c.slot;
   pref.pianoTs = c.ts;
-  salvaPref(); salvaPiano(); salvaGiorni(); ricostruisciModelli();
+  salvaPref(); salvaPiano(); salvaGiorni(); salvaSchede(); ricostruisciModelli();
 }
 
 async function sincronizza(silenzioso){
@@ -2231,16 +2669,22 @@ async function sincronizza(silenzioso){
         ? JSON.stringify({token: sync.token, sola: true, configTs: pref.pianoTs || 0})
         : JSON.stringify({token: sync.token, serie, eliminati,
             config: {ts: pref.pianoTs || 0, piano: piano, giorni: giorni, voci: pref.voci || {},
-                     ritmi: pref.ritmi || {}, slot: pref.slot || {}}})
+                     ritmi: pref.ritmi || {}, slot: pref.slot || {}, schede: schede}})
     });
     const d = await r.json();
     if (!d.ok) throw new Error(d.errore || "risposta non riconosciuta");
+    // la parola d'ordine dei collaboratori è solo lettura; uno script vecchio non risponde col ruolo: ce n'è una sola, la tua
+    sync.ruolo = d.ruolo === "collab" ? "collab" : "titolare";
+    if (sync.ruolo === "collab") sync.sola = true;
     serie = d.serie || [];
     eliminati = d.eliminati || [];
     if (d.config && (d.config.ts || 0) > (pref.pianoTs || 0)) adottaConfig(d.config);
+    // un dispositivo dei collaboratori non tiene le note del titolare, nemmeno se le aveva da prima
+    if (sync.ruolo === "collab"){ schede = soloPubbliche(schede); salvaSchede(); }
     sync.ultimo = new Date().toISOString();
-    salvaSerie(); salvaCest(); salvaSync(); disegnaTutto();
-    statoSync(serie.length + (sync.sola ? " serie scaricate dal foglio · " : " serie allineate col foglio · ") +
+    salvaSerie(); salvaCest(); salvaSync(); applicaRuolo(); disegnaTutto();
+    statoSync((sync.ruolo === "collab" ? "Accesso collaboratore · " : "") +
+              serie.length + (sync.sola ? " serie scaricate dal foglio · " : " serie allineate col foglio · ") +
               new Date(sync.ultimo).toLocaleString("it-IT"));
   } catch(err){
     statoSync("Non ha funzionato: " + err.message +
@@ -2323,8 +2767,8 @@ function quadranteSVG(lista, slot){
            (a1 - a0 > 180 ? 1 : 0) + " 1 " + p1[0].toFixed(2) + " " + p1[1].toFixed(2);
   };
   let svg = '<svg viewBox="0 0 240 240" role="img">';
-  svg += '<circle cx="120" cy="120" r="118" fill="var(--linea)" stroke="#1E4C61"/>';
-  svg += '<circle cx="120" cy="120" r="' + rAnello + '" fill="none" stroke="#123848" stroke-width="' + spessore + '"/>';
+  svg += '<circle cx="120" cy="120" r="118" fill="var(--linea)" stroke="var(--bordo)"/>';
+  svg += '<circle cx="120" cy="120" r="' + rAnello + '" fill="none" stroke="#253535" stroke-width="' + spessore + '"/>';
   // tacche: ogni 5', le grandi ogni 15'
   for (let m = 0; m < slot; m += 5){
     const grande = m % 15 === 0;
@@ -2712,10 +3156,581 @@ function disegnaStagione(){
     (z.en1 / energetici * 100).toFixed(1).replace(".", ",") + '%</b></span>');
 }
 
+/* ============ gruppo: traguardi, appuntamenti, fasi, stato in vigore e andature ============ */
+const g_ui = {tutti: false, aperte: {}, filtri: {}};
+
+/* ---------- chi vede cosa ----------
+   Il foglio decide dalla parola d'ordine: quella dei collaboratori vale solo lettura e non porta
+   le note del titolare (stato in vigore, composizione, vasca, tabelle non aperte).
+   Il titolare è chi ha quelle note sul dispositivo, o chi è entrato con la sua parola d'ordine.
+   Il titolare può anche provare la vista dei collaboratori (pref.vistaColl). */
+const sonoCollab = () => sync.ruolo === "collab";
+const haPrivato = () => Object.keys(schede).some(g => schede[g] && ((schede[g].stato || []).length || (schede[g].gruppo || []).length));
+const titolareQui = () => !sonoCollab() && (sync.ruolo === "titolare" || haPrivato());
+const vediTecniche = () => titolareQui() && !pref.vistaColl;
+
+function el(tag, cls, testo){
+  const x = document.createElement(tag);
+  if (cls) x.className = cls;
+  if (testo != null) x.textContent = testo;
+  return x;
+}
+// grassetto, corsivo e codice dei documenti, senza mai passare da innerHTML
+function mdNodi(testo){
+  const s = String(testo == null ? "" : testo);
+  const frag = document.createDocumentFragment();
+  let buf = "", i = 0;
+  const scarica = () => { if (buf){ frag.appendChild(document.createTextNode(buf)); buf = ""; } };
+  const dentro = (tag, da, a) => { const x = document.createElement(tag); x.appendChild(mdNodi(s.slice(da, a))); return x; };
+  while (i < s.length){
+    const c = s[i];
+    if (c === "*" && s.startsWith("***", i)){
+      const j = s.indexOf("***", i + 3);
+      if (j > i + 3){ scarica(); const b = document.createElement("strong"); b.appendChild(dentro("em", i + 3, j)); frag.appendChild(b); i = j + 3; continue; }
+    }
+    if (c === "*" && s[i + 1] === "*"){
+      const j = s.indexOf("**", i + 2);
+      if (j > i + 2){ scarica(); frag.appendChild(dentro("strong", i + 2, j)); i = j + 2; continue; }
+    } else if (c === "*" && s[i + 1] !== undefined && s[i + 1] !== " " && s[i + 1] !== "*"){
+      const j = s.indexOf("*", i + 1);
+      if (j > i + 1 && s[j - 1] !== " " && s[j + 1] !== "*"){ scarica(); frag.appendChild(dentro("em", i + 1, j)); i = j + 1; continue; }
+    } else if (c === "`"){
+      const j = s.indexOf("`", i + 1);
+      if (j > i + 1){ scarica(); const k = document.createElement("code"); k.textContent = s.slice(i + 1, j); frag.appendChild(k); i = j + 1; continue; }
+    }
+    buf += c; i++;
+  }
+  scarica();
+  return frag;
+}
+
+/* ---------- date ---------- */
+const giorniTra = (a, b) => Math.round((new Date(b + "T12:00:00") - new Date(a + "T12:00:00")) / 864e5);
+const piuGiorni = (iso, n) => { const d = new Date(iso + "T12:00:00"); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
+const lunediDi = iso => piuGiorni(iso, -gg(iso));
+const gData = iso => GIORNI[gg(iso)] + " " + dataBreve(iso);
+const gDataIt = iso => { const p = String(iso || "").split("-"); return p.length === 3 ? (+p[2]) + "/" + (+p[1]) + "/" + p[0] : ""; };
+function gIntervallo(a, b, esatta){
+  if (!esatta) return dataBreve(a) + " – " + dataBreve(b);
+  if (a === b) return gData(a);
+  const da = new Date(a + "T12:00:00"), db = new Date(b + "T12:00:00");
+  if (da.getMonth() === db.getMonth() && da.getFullYear() === db.getFullYear())
+    return GIORNI[gg(a)] + " " + da.getDate() + " – " + GIORNI[gg(b)] + " " + dataBreve(b);
+  return gData(a) + " – " + gData(b);
+}
+
+/* ---------- appuntamenti: dalla colonna "Test/gare" del piano ---------- */
+// giorno/mese -> data, con l'anno che cade vicino alla settimana del piano
+function grDataIso(giorno, mese, r){
+  let meglio = null;
+  [+r.i.slice(0, 4), +r.f.slice(0, 4)].forEach(y => {
+    const iso = y + "-" + String(mese).padStart(2, "0") + "-" + String(giorno).padStart(2, "0");
+    const d = new Date(iso + "T12:00:00");
+    if (isNaN(d) || d.getMonth() + 1 !== mese || d.getDate() !== giorno) return;
+    const dist = iso >= r.i && iso <= r.f ? 0 : Math.min(Math.abs(giorniTra(iso, r.i)), Math.abs(giorniTra(iso, r.f)));
+    if (!meglio || dist < meglio.dist) meglio = {iso: iso, dist: dist};
+  });
+  return meglio && meglio.dist <= 14 ? meglio.iso : null;
+}
+// "24-25/10", "6/3", "mer 21/10": tutte le date esplicite del testo
+function grDate(testo, r){
+  const out = [], re = /(\d{1,2})(?:\s*[-–]\s*(\d{1,2}))?\/(\d{1,2})(?!\d)/g;
+  let m;
+  while ((m = re.exec(testo))){
+    const da = grDataIso(+m[1], +m[3], r), a = m[2] ? grDataIso(+m[2], +m[3], r) : da;
+    if (da) out.push(da);
+    if (a) out.push(a);
+  }
+  return out.sort();
+}
+const GR_GIORNO = "(?:lun|mar|mer|gio|ven|sab|dom)[a-zì]*";
+// "Titolo — nota" e "Titolo + altro": il titolo resta corto, il resto va sotto (fuori dalle parentesi)
+function grSpezza(t){
+  let d = 0;
+  for (let i = 0; i + 2 < t.length; i++){
+    const c = t[i];
+    if (c === "(") d++;
+    else if (c === ")") d = Math.max(0, d - 1);
+    else if (!d && /\s/.test(c) && /[—–+]/.test(t[i + 1]) && /\s/.test(t[i + 2]))
+      return [t.slice(0, i).trim(), t.slice(i + 3).trim()];
+  }
+  return [t.trim(), ""];
+}
+function grEventi(gruppo){
+  const out = [];
+  piano.filter(r => r.g === gruppo).sort((a, b) => a.w - b.w).forEach(r => {
+    String(r.ga || "").split(/\s+·\s+|\s*;\s+/).forEach(parte => {
+      const t = parte.trim();
+      if (!t || /^nessun[ao]?\b/i.test(t) || /^\([^()]*\)$/.test(t)) return;
+      const ob = t.match(/^OBIETTIVO\s*(\d+)\s*[:\-–]?\s*/i);
+      const cat = (t.match(/\(\s*([ABC])\s*\)/) || [])[1] || "";
+      const tipo = ob ? "obiettivo" : cat ? "gara" : /test/i.test(t) ? "test" : "altro";
+      let data, fine, esatta = true;
+      const date = grDate(t, r);
+      if (date.length){ data = date[0]; fine = date[date.length - 1]; }
+      else if ((tipo === "gara" || tipo === "obiettivo") && r.gr && r.gr.length){
+        data = piuGiorni(r.i, r.gr[0]); fine = piuGiorni(r.i, r.gr[r.gr.length - 1]);
+      } else { data = r.i; fine = r.f; esatta = false; }
+      let titolo = t.replace(/^OBIETTIVO\s*\d+\s*[:\-–]?\s*/i, "").replace(/\s*\(\s*[ABC]\s*\)/, "");
+      if (tipo !== "test")      // la data sta già nel badge: la tolgo dal titolo
+        titolo = titolo.replace(new RegExp(",?\\s*(?:inizia\\s+)?(?:solo\\s+)?(?:" + GR_GIORNO + "(?:\\s*[-–]\\s*" + GR_GIORNO + ")?\\s+)?\\d{1,2}(?:\\s*[-–]\\s*\\d{1,2})?\\/\\d{1,2}"), "");
+      titolo = titolo.replace(/\s{2,}/g, " ").replace(/\s+([,;])/g, "$1").replace(/^[\s,;—–-]+|[\s,;—–-]+$/g, "");
+      const sp = grSpezza(titolo);
+      titolo = sp[0];
+      let dett = "";
+      if (tipo === "test"){      // "Retest Vcrit 1 (mer 21/10 …) + recupero": il nome in grande, il resto sotto
+        const mm = titolo.match(/^([^(]+?)\s*\(([^()]*)\)\s*(.*)$/);
+        if (mm){ titolo = mm[1]; dett = (mm[2] + (mm[3] ? " " + mm[3] : "")).trim(); }
+      }
+      dett = [dett, sp[1]].filter(Boolean).join(" · ");
+      out.push({w: r.w, fase: r.m, k: r.k || "normale", tipo: tipo, cat: cat, n: ob ? +ob[1] : 0,
+                titolo: titolo || t, dett: dett, testo: t, data: data, fine: fine, esatta: esatta});
+    });
+  });
+  return out.sort((a, b) => (a.data < b.data ? -1 : a.data > b.data ? 1 : 0) || a.w - b.w);
+}
+// quanto manca: in giorni se la data è certa, in settimane se si conosce solo la settimana
+function grQuando(e, oggi){
+  if (giorniTra(oggi, e.fine) < 0) return {passato: true, testo: "passata", num: "", unita: ""};
+  const d = giorniTra(oggi, e.data);
+  if (e.esatta){
+    if (d > 1) return {num: String(d), unita: "giorni", testo: "tra " + d + " giorni"};
+    if (d === 1) return {num: "1", unita: "giorno", testo: "domani"};
+    return {num: "", unita: "", testo: d === 0 ? "oggi" : "in corso", adesso: true};
+  }
+  const s = giorniTra(lunediDi(oggi), lunediDi(e.data)) / 7;
+  if (s <= 0) return {num: "", unita: "", testo: "questa settimana", adesso: true};
+  if (s === 1) return {num: "1", unita: "settimana", testo: "settimana prossima"};
+  return {num: String(s), unita: "settimane", testo: "tra " + s + " settimane"};
+}
+
+/* ---------- fasi ---------- */
+function grTipoFase(m){
+  if (/taper/i.test(m)) return "taper";
+  if (/transizione|holiday/i.test(m)) return "trans";
+  if (/blocco comune/i.test(m)) return "comune";
+  return "prep";
+}
+function grFasi(sett){
+  const fasi = [];
+  sett.forEach(r => {
+    let f = fasi[fasi.length - 1];
+    if (!f || f.m !== r.m){
+      f = {m: r.m, tipo: grTipoFase(r.m), da: r.w, a: r.w, i: r.i, f: r.f, n: 0, t: 0, z1: 0, z2: 0, z3: 0, primo: r};
+      fasi.push(f);
+    }
+    f.a = r.w; f.f = r.f; f.n++; f.t += r.t; f.z1 += r.e1 + r.tc; f.z2 += r.e2; f.z3 += r.e3 + r.sp;
+  });
+  return fasi;
+}
+const GR_KIND = {normale: "carico", scarico: "scarico", minitaper: "mini-taper", taper: "taper"};
+const grPerc = (v, t, dec) => (t ? (v / t * 100) : 0).toFixed(dec || 0).replace(".", ",") + "%";
+
+// punto lungo le settimane del piano, da 0 a 1
+function grPosizione(sett, iso){
+  const n = sett.length;
+  if (iso <= sett[0].i) return 0;
+  if (iso > sett[n - 1].f) return 1;
+  let k = sett.findIndex(r => iso >= r.i && iso <= r.f);
+  if (k < 0) k = sett.findIndex(r => iso < r.i);
+  if (k < 0) return 1;
+  const r = sett[k], durata = giorniTra(r.i, r.f) + 1;
+  const dentro = iso > r.i ? Math.min(durata, giorniTra(r.i, iso)) : 0;
+  return (k + dentro / durata) / n;
+}
+const apriSettimana = (sett, w) => {
+  const r = sett.filter(x => x.w === w)[0];
+  if (r){ dataW = r.i; disegnaSettimana(); vaiA("v-settimana"); }
+};
+
+/* ---------- pezzi della pagina ---------- */
+// il titolare sceglie se vedere tutto o come vedono i collaboratori
+function grVista(){
+  const box = el("div", "sez g-vista"), riga = el("div", "g-vista-riga"), c = el("div", "chips");
+  riga.append(el("span", "g-vista-et", "Vista"), c);
+  box.appendChild(riga);
+  chips(c, [{val: false, et: "Completa"}, {val: true, et: "Collaboratori"}], v => v === !!pref.vistaColl,
+        v => { pref.vistaColl = v; salvaPref(); disegnaGruppo(); }, "piccolo");
+  if (pref.vistaColl)
+    box.appendChild(el("p", "nota", "Così vedono i collaboratori: traguardi, appuntamenti e le tabelle di andature che hai aperto. Niente composizione, vasca, stato in vigore e fasi."));
+  return box;
+}
+// una tabella delle andature: la vedono i collaboratori? Si cambia dal PC e si sincronizza
+function grVisibilita(g, idx, pubblica, puoi){
+  const r = el("div", "g-vis" + (pubblica ? " on" : "")), testo = pubblica ? "Visibile ai collaboratori" : "Solo tu";
+  if (!puoi){
+    r.append(el("span", "g-vis-pallino"), el("span", "g-vis-testo", testo));
+    return r;
+  }
+  const b = el("button", "g-vis-sw"), sw = el("span", "g-sw");
+  b.type = "button"; b.setAttribute("role", "switch"); b.setAttribute("aria-checked", pubblica ? "true" : "false");
+  sw.appendChild(el("i"));
+  b.append(sw, el("span", "g-vis-testo", testo));
+  b.onclick = () => grImpostaVis(g, idx, !pubblica);
+  r.appendChild(b);
+  return r;
+}
+function grImpostaVis(g, idx, apri){
+  const sc = schede[g];
+  if (!sc || !sc.tabelle || !sc.tabelle[idx]) return;
+  sc.tabelle[idx].p = apri ? 1 : 0;
+  salvaSchede();
+  pref.pianoTs = Date.now(); salvaPref();          // il foglio adotta la configurazione più recente
+  if (sync.url && !sync.sola) sincronizza(true);
+  disegnaGruppo();
+}
+
+function grTesta(g, sett, fasi, eventi, corr, oggi, scheda){
+  const sez = el("div", "sez g-testa"), p = el("div", "pannello");
+  const riga = el("div", "g-riga1"), sx = el("div");
+  sx.appendChild(el("div", "g-nome", NOMI_GRUPPO[g] || g));
+  const fase = el("div", "g-fase");
+  fase.appendChild(el("span", "g-fase-nome", corr.m));
+  fase.appendChild(el("span", "g-kind k-" + (corr.k || "normale"), GR_KIND[corr.k || "normale"] || "carico"));
+  fase.appendChild(el("span", "g-vol", fmt(corr.t) + " m"));
+  sx.appendChild(fase);
+  const dx = el("div", "g-sett");
+  dx.appendChild(el("b", null, String(corr.w)));
+  dx.appendChild(el("span", null, "/ " + sett.length));
+  dx.appendChild(el("small", null, oggi >= corr.i ? dataBreve(corr.i) + " – " + dataBreve(corr.f) : "dal " + dataBreve(corr.i)));
+  riga.append(sx, dx);
+  p.appendChild(riga);
+
+  const info = (scheda && scheda.gruppo) || [];
+  if (info.length){
+    const bl = el("div", "g-info");
+    info.forEach(x => {
+      const r = el("div");
+      r.appendChild(el("span", "g-et", x.t));
+      r.appendChild(document.createTextNode(" " + x.x));
+      bl.appendChild(r);
+    });
+    p.appendChild(bl);
+  }
+
+  // la stagione in una riga: fasi in basso, appuntamenti sopra, oggi in verticale
+  const n = sett.length, linea = el("div", "g-linea");
+  const segni = el("div", "g-segni");
+  // i segni troppo vicini salgono su un'altra corsia (la larghezza vera non si conosce: conto su 300 px)
+  const LARGO = 300, MEZZO = ob => (ob ? 10 : 5);
+  const punti = [];
+  eventi.forEach(e => {
+    const r = sett.filter(x => x.w === e.w)[0];
+    if (!r) return;
+    punti.push({e: e, x: grPosizione(sett, e.esatta ? e.data : piuGiorni(r.i, 3)) * 100, ob: e.tipo === "obiettivo", corsia: 0});
+  });
+  const ultimi = [];
+  punti.sort((a, b) => a.x - b.x).forEach(s => {
+    let c = 0;
+    while (c < 4 && ultimi[c] && (s.x - ultimi[c].x) * LARGO / 100 < MEZZO(s.ob) + MEZZO(ultimi[c].ob) + 3) c++;
+    ultimi[c] = s; s.corsia = c;
+  });
+  linea.style.setProperty("--corsie", String(Math.max(1, ultimi.length)));
+  punti.forEach(s => {
+    const e = s.e;
+    const x = el("i", "g-segno " + (e.tipo === "test" ? "prova" : e.cat || "altro") + (s.ob ? " ob" : ""));
+    x.style.left = s.x + "%";
+    x.style.setProperty("--alt", String(s.corsia));
+    x.style.zIndex = String(6 - s.corsia);
+    x.title = e.titolo + " · " + gIntervallo(e.data, e.fine, e.esatta);
+    segni.appendChild(x);
+  });
+  const fasce = el("div", "g-fasce");
+  const ora = fasi.findIndex(f => corr.w >= f.da && corr.w <= f.a);
+  fasi.forEach((f, k) => {
+    const s = el("span", "f-" + f.tipo + (k === ora ? " ora" : f.f < oggi ? " passata" : ""));
+    s.style.flex = String(f.n);
+    s.title = f.m + " · sett. " + f.da + (f.a !== f.da ? "–" + f.a : "");
+    fasce.appendChild(s);
+  });
+  const mesi = el("div", "g-mesi"), iniz = ["G", "F", "M", "A", "M", "G", "L", "A", "S", "O", "N", "D"];
+  sett.forEach((r, k) => {
+    if (k && sett[k - 1].i.slice(5, 7) === r.i.slice(5, 7)) return;
+    const m = el("span", null, iniz[+r.i.slice(5, 7) - 1]);
+    m.style.left = (k / n * 100) + "%";
+    mesi.appendChild(m);
+  });
+  const adesso = el("div", "g-oggi"); adesso.style.left = (grPosizione(sett, oggi) * 100) + "%";
+  linea.append(segni, fasce, adesso, mesi);
+  p.appendChild(linea);
+
+  const leg = el("div", "legenda g-leg");
+  const voce = (cls, testo) => { const s = el("span"); s.appendChild(el("i", "g-segno fisso " + cls)); s.appendChild(document.createTextNode(testo)); return s; };
+  leg.append(voce("ob altro", "obiettivo"), voce("A", "gara A"), voce("B", "B"), voce("C", "C"), voce("prova", "test"));
+  p.appendChild(leg);
+  sez.appendChild(p);
+  return sez;
+}
+
+function grTraguardi(sett, eventi, oggi){
+  const futuri = eventi.filter(e => e.fine >= oggi);
+  const ob = futuri.find(e => e.tipo === "obiettivo");
+  let gara = futuri.find(e => e.tipo === "gara" || e.tipo === "obiettivo");
+  if (gara === ob) gara = futuri.find(e => e !== ob && (e.tipo === "gara" || e.tipo === "obiettivo"));
+  const prova = futuri.find(e => e.tipo === "test");
+  const voci = [[ob, ob ? "Obiettivo " + ob.n : ""], [gara, "Prossima gara"], [prova, "Prossimo test"]].filter(x => x[0]);
+  if (!voci.length) return null;
+  const sez = el("div", "sez");
+  sez.appendChild(el("h2", "titolo-sez", "Traguardi"));
+  const lista = el("div", "g-traguardi");
+  voci.forEach(([e, et]) => {
+    const q = grQuando(e, oggi);
+    const b = el("button", "g-tr t-" + e.tipo + (e.cat ? " cat-" + e.cat : ""));
+    b.type = "button";
+    const sx = el("span", "g-tr-testo");
+    sx.appendChild(el("span", "g-tr-et", et));
+    sx.appendChild(el("span", "g-tr-nome", e.titolo));
+    sx.appendChild(el("span", "g-tr-data", gIntervallo(e.data, e.fine, e.esatta) + " · sett. " + e.w));
+    const dx = el("span", "g-tr-num" + (q.adesso ? " adesso" : ""));
+    if (q.num){ dx.appendChild(el("b", null, q.num)); dx.appendChild(el("small", null, q.unita)); }
+    else dx.appendChild(el("b", "parola", q.testo));
+    b.append(sx, dx);
+    b.onclick = () => apriSettimana(sett, e.w);
+    lista.appendChild(b);
+  });
+  sez.appendChild(lista);
+  return sez;
+}
+
+function grEvento(e, sett, oggi, prossimo){
+  const q = grQuando(e, oggi);
+  const li = el("li", "g-ev t-" + e.tipo + (q.passato ? " passato" : "") + (prossimo ? " prossimo" : ""));
+  li.appendChild(el("span", "g-badge " + (e.tipo === "test" ? "prova" : e.cat || "altro") + (e.tipo === "obiettivo" ? " ob" : ""),
+                    e.tipo === "test" ? "T" : (e.cat || "•")));
+  const corpo = el("span", "g-ev-corpo");
+  corpo.appendChild(el("b", null, e.titolo));
+  corpo.appendChild(el("small", null, gIntervallo(e.data, e.fine, e.esatta) + " · sett. " + e.w +
+                       (e.tipo === "obiettivo" ? " · Obiettivo " + e.n : "")));
+  if (e.dett) corpo.appendChild(el("small", "g-dett", e.dett));
+  li.appendChild(corpo);
+  li.appendChild(el("span", "g-ev-quando" + (q.adesso ? " adesso" : ""), q.testo));
+  li.tabIndex = 0;
+  li.onclick = () => apriSettimana(sett, e.w);
+  li.onkeydown = ev => { if (ev.key === "Enter") apriSettimana(sett, e.w); };
+  return li;
+}
+
+function grAppuntamenti(sett, eventi, oggi){
+  const sez = el("div", "sez"), h = el("h2", "titolo-sez");
+  h.appendChild(document.createTextNode("Appuntamenti"));
+  const futuri = eventi.filter(e => e.fine >= oggi);
+  h.appendChild(el("small", null, futuri.length + " in arrivo" + (eventi.length - futuri.length ? " · " + (eventi.length - futuri.length) + (eventi.length - futuri.length === 1 ? " passato" : " passati") : "")));
+  sez.appendChild(h);
+  const p = el("div", "pannello");
+  if (!eventi.length){
+    p.appendChild(el("p", "vuoto", "Nel piano di questo gruppo non ci sono gare né test."));
+    sez.appendChild(p); return sez;
+  }
+  const mostra = g_ui.tutti ? eventi : futuri.slice(0, 6);
+  const primo = futuri[0];
+  const ul = el("ul", "g-eventi");
+  mostra.forEach(e => ul.appendChild(grEvento(e, sett, oggi, e === primo)));
+  if (!mostra.length) ul.appendChild(el("li", "vuoto", "Non ci sono altri appuntamenti in questa stagione."));
+  p.appendChild(ul);
+  if (eventi.length > 6 || g_ui.tutti){
+    const b = el("button", "secondario g-tutti", g_ui.tutti ? "Solo i prossimi" : "Tutta la stagione (" + eventi.length + ")");
+    b.type = "button";
+    b.onclick = () => { g_ui.tutti = !g_ui.tutti; disegnaGruppo(); };
+    p.appendChild(b);
+  }
+  sez.appendChild(p);
+  return sez;
+}
+
+function grFasiLista(sett, fasi, corr, oggi){
+  const sez = el("div", "sez"), h = el("h2", "titolo-sez");
+  h.appendChild(document.createTextNode("Fasi della stagione"));
+  h.appendChild(el("small", null, "mix di zone del piano"));
+  sez.appendChild(h);
+  const p = el("div", "pannello");
+  const tot = fasi.reduce((a, f) => a + f.t, 0), z1 = fasi.reduce((a, f) => a + f.z1, 0),
+        z2 = fasi.reduce((a, f) => a + f.z2, 0), z3 = fasi.reduce((a, f) => a + f.z3, 0);
+  const sint = el("p", "fonte", "Su " + fmt(tot) + " m: Z1 " + grPerc(z1, tot, 1) + " · Z2 " + grPerc(z2, tot, 1) + " · Z3 " + grPerc(z3, tot, 1));
+  p.appendChild(sint);
+  const ul = el("ul", "g-fasi");
+  fasi.forEach(f => {
+    const attuale = corr.w >= f.da && corr.w <= f.a;
+    const li = el("li", "g-fase-riga f-" + f.tipo + (attuale ? " ora" : f.f < oggi ? " passata" : ""));
+    li.appendChild(el("span", "g-fase-sw"));
+    const c = el("div", "g-fase-corpo");
+    const tit = el("div", "g-fase-tit");
+    tit.appendChild(el("b", null, f.m));
+    tit.appendChild(el("span", null, attuale ? "ora · sett. " + f.da + "–" + f.a : "sett. " + f.da + (f.a !== f.da ? "–" + f.a : "")));
+    c.appendChild(tit);
+    c.appendChild(el("div", "g-fase-sub", dataBreve(f.i) + " – " + dataBreve(f.f) + " · " + f.n + (f.n === 1 ? " settimana" : " settimane") +
+                     " · " + fmt(f.t / f.n) + " m/sett."));
+    const barra = el("div", "g-tid");
+    [[f.z1, "var(--en1)"], [f.z2, "var(--en2)"], [f.z3, "var(--en3)"]].forEach(x => {
+      const s = el("i"); s.style.flex = String(x[0]); s.style.background = x[1]; barra.appendChild(s);
+    });
+    c.appendChild(barra);
+    c.appendChild(el("div", "g-tid-l", "Z1 " + grPerc(f.z1, f.t) + " · Z2 " + grPerc(f.z2, f.t) + " · Z3 " + grPerc(f.z3, f.t)));
+    li.appendChild(c);
+    li.tabIndex = 0;
+    const vai = () => apriSettimana(sett, attuale ? corr.w : f.da);
+    li.onclick = vai;
+    li.onkeydown = ev => { if (ev.key === "Enter") vai(); };
+    ul.appendChild(li);
+  });
+  p.appendChild(ul);
+  p.appendChild(el("p", "nota", "Z1 = En-1 e TEC, Z2 = En-2, Z3 = En-3 e Sp. Sono i metri del piano, non quelli nuotati."));
+  sez.appendChild(p);
+  return sez;
+}
+
+// una tabella del documento; se la prima colonna si ripete (atleta × stile) si può filtrare per atleta
+function grTabella(g, tab){
+  const chiave = g + "|f|" + tab.t;
+  const testa = tab.r[0], righe = tab.r.slice(1);
+  const box = el("div", "g-tab"), filtri = el("div", "chips g-filtri"), scorri = el("div", "g-scorri");
+  const nomi = [];
+  righe.forEach(r => { if (r[0] && nomi.indexOf(r[0]) < 0) nomi.push(r[0]); });
+  const filtrabile = righe.length >= 7 && nomi.length > 1 && nomi.length < righe.length;
+  // con molte colonne, su telefono ogni riga diventa una scheda: niente colonne fuori schermo
+  const molte = testa.length >= 5;
+  const corte = molte && righe.every(r => r.slice(1).every(c => c.length <= 12));
+  // atleta × stile: su telefono lo stile passa nel titolo della scheda
+  const fusa = molte && nomi.length < righe.length && righe.every(r => r[1].length <= 6);
+  scorri.className = "g-scorri" + (molte ? " molte" : "") + (corte ? " corte" : "");
+  const disegna = () => {
+    const f = g_ui.filtri[chiave] || null;
+    if (filtrabile)
+      chips(filtri, [{val: null, et: "Tutti"}].concat(nomi.map(n => ({val: n, et: mdSemplice(n)}))),
+            v => v === f, v => { g_ui.filtri[chiave] = v; disegna(); }, "piccolo");
+    scorri.textContent = "";
+    const t = el("table", "g-tabella" + (molte ? " molte" : "") + (corte ? " corte" : "")), th = el("thead"), tr = el("tr");
+    testa.forEach(c => { const x = el("th"); x.scope = "col"; x.appendChild(mdNodi(c)); tr.appendChild(x); });
+    th.appendChild(tr); t.appendChild(th);
+    const tb = el("tbody");
+    righe.filter(r => !f || r[0] === f).forEach(r => {
+      const rr = el("tr");
+      r.forEach((c, k) => {
+        const x = el(k === 0 ? "th" : "td");
+        if (k === 0) x.scope = "row"; else x.setAttribute("data-et", mdSemplice(testa[k]));
+        if (c.length > 34) x.className = "lungo";
+        else if (fusa && k === 1) x.className = "fusa";
+        x.appendChild(mdNodi(c));
+        if (fusa && k === 0 && r[1]) x.appendChild(el("span", "g-sub", mdSemplice(r[1])));
+        rr.appendChild(x);
+      });
+      tb.appendChild(rr);
+    });
+    t.appendChild(tb); scorri.appendChild(t);
+  };
+  if (filtrabile) box.appendChild(filtri);
+  box.appendChild(scorri);
+  disegna();
+  return box;
+}
+
+function grAndature(g, scheda, tec){
+  const vista = tec ? scheda : schedaPubblica(scheda);
+  const elenco = (vista.tabelle || []).map((t, i) => ({t: t, i: i}));
+  if (!elenco.length) return null;
+  const sez = el("div", "sez"), h = el("h2", "titolo-sez");
+  h.appendChild(document.createTextNode("Andature e partenze"));
+  h.appendChild(el("small", null, scheda.agg ? "documento del " + gDataIt(scheda.agg) : "dal documento"));
+  sez.appendChild(h);
+  const p = el("div", "pannello g-doc"), puoi = tec && !sync.sola;
+  elenco.forEach((x, k) => {
+    const t = x.t, pubblica = tabPubblica(t, x.i);
+    if (k === 0){
+      if (t.t) p.appendChild(el("div", "g-tab-tit", t.t));
+      if (tec) p.appendChild(grVisibilita(g, x.i, pubblica, puoi));
+      p.appendChild(grTabella(g, t));
+      return;
+    }
+    const chiave = g + "|t|" + t.t;
+    const d = el("details", "g-altre");
+    d.open = !!g_ui.aperte[chiave];
+    d.addEventListener("toggle", () => { g_ui.aperte[chiave] = d.open; });
+    const sm = el("summary", null, t.t || "Altra tabella");
+    if (tec && !pubblica) sm.appendChild(el("span", "g-solo", "solo tu"));
+    d.appendChild(sm);
+    if (tec) d.appendChild(grVisibilita(g, x.i, pubblica, puoi));
+    d.appendChild(grTabella(g, t));
+    p.appendChild(d);
+  });
+  sez.appendChild(p);
+  return sez;
+}
+
+function grStato(g, scheda, oggi){
+  const sez = el("div", "sez"), h = el("h2", "titolo-sez");
+  h.appendChild(document.createTextNode("Stato in vigore"));
+  const eta = scheda.agg ? giorniTra(scheda.agg, oggi) : null;
+  h.appendChild(el("small", eta != null && eta > 7 ? "datato" : null,
+    scheda.agg ? "documento del " + gDataIt(scheda.agg) + (eta > 0 ? " · " + eta + (eta === 1 ? " giorno fa" : " giorni fa") : "") : "dal documento"));
+  sez.appendChild(h);
+  const p = el("div", "pannello g-doc");
+  scheda.stato.forEach((v, i) => {
+    const chiave = g + "|s|" + i;
+    const d = el("details", "g-voce" + (v.a ? " avv" : ""));
+    d.open = !!g_ui.aperte[chiave];
+    d.addEventListener("toggle", () => { g_ui.aperte[chiave] = d.open; });
+    const s = el("summary");
+    if (v.t) s.appendChild(el("span", "et", v.t));
+    s.appendChild(el("span", "an", mdSemplice(v.x)));
+    d.appendChild(s);
+    const corpo = el("div", "corpo");
+    corpo.appendChild(mdNodi(v.x));
+    d.appendChild(corpo);
+    p.appendChild(d);
+  });
+  sez.appendChild(p);
+  return sez;
+}
+
+// quando non c'è niente da mostrare, una riga che dice come averlo
+function grNotaVuota(scheda, haTabelle){
+  let t = "";
+  if (sonoCollab()){
+    if (!haTabelle) t = "Le andature compaiono qui appena l'allenatore le pubblica.";
+  } else if (!titolareQui()){
+    t = "Per vedere anche le informazioni tecniche del gruppo collega il foglio con la tua parola d'ordine, oppure carica i documenti da Dati → Programmazioni.";
+  } else if (pref.vistaColl){
+    if (!haTabelle) t = "Nessuna tabella è aperta ai collaboratori: dalla vista completa puoi aprirne con l'interruttore.";
+  } else if (!scheda || (!(scheda.stato || []).length && !(scheda.tabelle || []).length)){
+    t = sync.sola ? "Stato in vigore e andature arrivano dal foglio: sincronizza da Dati (i documenti si caricano prima dal PC)."
+                  : "Stato in vigore e andature arrivano dal documento del gruppo: caricalo da Dati → Programmazioni.";
+  }
+  if (!t) return null;
+  const s = el("div", "sez");
+  s.appendChild(el("p", "nota", t));
+  return s;
+}
+
+function disegnaGruppo(){
+  const radice = document.getElementById("g-radice");
+  radice.textContent = "";
+  const g = pref.gruppo;
+  const sett = piano.filter(r => r.g === g).sort((a, b) => a.w - b.w);
+  if (!sett.length){
+    const s = el("div", "sez");
+    s.appendChild(el("p", "vuoto", "Nessun piano per questo gruppo. Caricalo da Dati → Programmazioni."));
+    radice.appendChild(s);
+    return;
+  }
+  const oggi = oggiISO(), eventi = grEventi(g), fasi = grFasi(sett);
+  const corr = sett.find(r => oggi <= r.f) || sett[sett.length - 1];
+  const scheda = schede[g] || null, tec = vediTecniche();
+  if (titolareQui()) radice.appendChild(grVista());
+  radice.appendChild(grTesta(g, sett, fasi, eventi, corr, oggi, tec ? scheda : null));
+  const tr = grTraguardi(sett, eventi, oggi);
+  if (tr) radice.appendChild(tr);
+  const and = scheda && scheda.tabelle && scheda.tabelle.length ? grAndature(g, scheda, tec) : null;
+  if (and) radice.appendChild(and);
+  if (tec && scheda && scheda.stato && scheda.stato.length) radice.appendChild(grStato(g, scheda, oggi));
+  radice.appendChild(grAppuntamenti(sett, eventi, oggi));
+  if (tec) radice.appendChild(grFasiLista(sett, fasi, corr, oggi));
+  const nota = grNotaVuota(scheda, !!and);
+  if (nota) radice.appendChild(nota);
+}
+
 /* ============ navigazione e avvio ============ */
 function disegnaTutto(){
   disegnaGruppi();
-  disegnaSeduta(); disegnaSettimana(); disegnaStagione(); disegnaDati();
+  disegnaSeduta(); disegnaSettimana(); disegnaStagione(); disegnaGruppo(); disegnaDati();
 }
 
 
@@ -2820,15 +3835,19 @@ document.getElementById("file-json").addEventListener("change", e => {
   };
   lettore.readAsText(f); e.target.value = "";
 });
+// indirizzo o parola d'ordine nuovi: il ruolo si saprà dalla prossima risposta del foglio
+function leggiCampiSync(){
+  const url = document.getElementById("sync-url").value.trim(), token = document.getElementById("sync-token").value.trim();
+  if (url !== sync.url || token !== sync.token) sync.ruolo = "";
+  sync.url = url; sync.token = token;
+}
 document.getElementById("sync-salva").onclick = () => {
-  sync.url = document.getElementById("sync-url").value.trim();
-  sync.token = document.getElementById("sync-token").value.trim();
-  salvaSync(); statoSync("Indirizzo salvato.");
+  leggiCampiSync();
+  salvaSync(); applicaRuolo(); disegnaTutto(); statoSync("Indirizzo salvato.");
 };
 document.getElementById("sync-ora").onclick = () => {
-  sync.url = document.getElementById("sync-url").value.trim();
-  sync.token = document.getElementById("sync-token").value.trim();
-  salvaSync(); sincronizza(false);
+  leggiCampiSync();
+  salvaSync(); applicaRuolo(); sincronizza(false);
 };
 document.getElementById("carica-md").onclick = () => document.getElementById("file-md").click();
 document.getElementById("file-md").addEventListener("change", e => {
