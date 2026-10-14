@@ -479,6 +479,24 @@ details.incolla textarea{margin-top:8px}
   .g-tr-num b{font-size:36px}
 }
 
+/* ============ pulsanti PDF ============ */
+.frecce #pdf{width:auto; padding:0 13px; font-size:16px; font-weight:600}
+.frecce #pdf.fatto{background:var(--piastrella); color:var(--fondale); border-color:var(--piastrella)}
+@media (max-width:420px){
+  .frecce #copia, .frecce #pdf{padding:0 10px; font-size:15px}
+}
+/* PDF dei tre gruppi: sotto la data, a tutta larghezza; dove c'è posto (colonna larga) sta sulla stessa riga */
+.btn-pdf{height:40px; padding:0 14px; border-radius:var(--r-s); border:1px solid var(--bordo); background:transparent;
+  color:var(--piastrella); font-family:var(--f-num); font-size:16px; font-weight:600; line-height:1}
+.btn-pdf:hover{background:var(--acqua-alta)}
+.btn-pdf.fatto{background:var(--piastrella); color:var(--fondale); border-color:var(--piastrella)}
+.strumenti{flex-wrap:wrap}
+.strumenti #pdf3{flex:1 1 100%}
+.testa-seduta{container-type:inline-size}
+@container (min-width:500px){ .strumenti #pdf3{flex:none} }
+/* scheda Settimana: i due pulsanti in fondo alla scheda in alto */
+.stampa{display:flex; gap:8px; margin-top:14px}
+.stampa .btn-pdf{flex:1; min-width:0; padding:0 8px}
 /* ============ navigazione ============ */
 nav{position:fixed; left:0; right:0; bottom:0; z-index:30; display:flex; justify-content:center;
   background:rgba(13,19,19,.94); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
@@ -516,7 +534,7 @@ nav button[aria-pressed="true"] svg{stroke:var(--en1)}
 :root{ --rame:#C07450; --sabbia:#F2A360; --inchiostro:#0D1313; }
 :focus-visible{outline-color:var(--sabbia)}
 .primario{background:var(--sabbia); color:var(--inchiostro)}
-.frecce #copia.fatto{background:var(--sabbia); color:var(--inchiostro); border-color:var(--sabbia)}
+.frecce #copia.fatto, .frecce #pdf.fatto, .btn-pdf.fatto{background:var(--sabbia); color:var(--inchiostro); border-color:var(--sabbia)}
 nav button[aria-pressed="true"]{color:var(--sabbia)}
 nav button[aria-pressed="true"] svg{stroke:var(--sabbia)}
 .gruppi button[aria-pressed="true"]{border-color:var(--rame)}
@@ -625,7 +643,9 @@ def 1x200 mx en1 // social"></textarea>
                 <button id="g-prec" aria-label="Giorno precedente">‹</button>
                 <button id="g-succ" aria-label="Giorno successivo">›</button>
                 <button id="copia" title="Copia la seduta in formato testo">Copia</button>
+                <button id="pdf" title="Scarica la seduta in PDF">PDF</button>
               </span>
+              <button id="pdf3" class="btn-pdf" title="Scarica la seduta di tutti e 3 i gruppi in un solo PDF">PDF 3 gruppi</button>
             </div>
           </div>
           <div class="pannello">
@@ -678,6 +698,10 @@ def 1x200 mx en1 // social"></textarea>
           <div class="sotto">
             <span id="w-manca">—</span>
             <span id="w-ritmo"></span>
+          </div>
+          <div class="stampa">
+            <button id="w-pdf" class="btn-pdf" title="Scarica la settimana in PDF">PDF settimana</button>
+            <button id="w-pdf3" class="btn-pdf" title="Scarica la settimana di tutti e 3 i gruppi in un solo PDF">PDF 3 gruppi</button>
           </div>
         </div>
       </div>
@@ -3726,6 +3750,667 @@ function disegnaGruppo(){
   const nota = grNotaVuota(scheda, !!and);
   if (nota) radice.appendChild(nota);
 }
+
+/* ============ PDF: seduta, settimana, tre gruppi ============
+   PDF veri, scritti qui dentro (nessuna libreria, funzionano anche senza rete): A4 in verticale, testo vettoriale
+   in Helvetica, fatti per essere stampati e letti a bordo vasca. Quattro pulsanti: la seduta del giorno, la seduta dei
+   tre gruppi, la settimana (riepilogo e una pagina per giorno), la settimana dei tre gruppi.
+   Accanto alle zone compaiono le diciture di PDF_ZONE: per cambiarle, o per aggiungerne a TEC e Sp, basta cambiare quella riga. */
+const PDF_ZONE = {en1: "AEROBICO 25-27", en2: "SOGLIA 30", en3: "POTENZA 32"};
+const PDF_BLOCCO = {wu: "Riscaldamento", tec: "Tecnica", pre: "Pre-serie", main: "Serie principale",
+                    comp: "Complemento", def: "Defaticamento"};
+const PDF_W = 595.28, PDF_H = 841.89;                                   // A4, in punti
+const PDF_INK = [0.082, 0.122, 0.125], PDF_GRIGIO = [0.36, 0.40, 0.40], PDF_NOTA = [0.20, 0.24, 0.25],
+      PDF_FILO = [0.80, 0.80, 0.77], PDF_FASCIA = [0.925, 0.925, 0.905];
+/* larghezze di Helvetica e Helvetica-Bold, generate dalle metriche standard */
+/* larghezze dei caratteri (cp1252, da 32 a 255), in millesimi di em: Helvetica (R) e Helvetica-Bold (B) */
+const PDF_LARG = {
+R: [
+  278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,
+  556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,
+  1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,
+  667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,
+  333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,
+  556,556,333,500,278,556,500,722,500,500,500,334,260,334,584,761,
+  556,556,222,556,333,1000,556,556,333,1000,667,333,1000,556,611,556,
+  556,222,222,333,333,350,556,1000,333,1000,500,333,944,556,500,667,
+  278,333,556,556,556,556,260,556,333,737,370,556,584,333,737,333,
+  400,584,333,333,333,556,537,278,333,333,365,556,834,834,834,611,
+  667,667,667,667,667,667,1000,722,667,667,667,667,278,278,278,278,
+  722,722,778,778,778,778,778,584,778,722,722,722,722,667,667,611,
+  556,556,556,556,556,556,889,500,556,556,556,556,278,278,278,278,
+  556,556,556,556,556,556,556,584,611,556,556,556,556,500,556,500
+],
+B: [
+  278,333,474,556,556,889,722,238,333,333,389,584,278,333,278,278,
+  556,556,556,556,556,556,556,556,556,556,333,333,584,584,584,611,
+  975,722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,
+  667,778,722,667,611,722,667,944,667,667,611,333,278,333,584,556,
+  333,556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,
+  611,611,389,556,333,611,556,778,556,556,500,389,280,389,584,761,
+  556,556,278,556,500,1000,556,556,333,1000,667,333,1000,556,611,556,
+  556,278,278,500,500,350,556,1000,333,1000,556,333,944,556,500,667,
+  278,333,556,556,556,556,280,556,333,737,370,556,584,333,737,333,
+  400,584,333,333,333,611,556,278,333,333,365,556,834,834,834,611,
+  722,722,722,722,722,722,1000,722,667,667,667,667,278,278,278,278,
+  722,722,778,778,778,778,778,584,778,722,722,722,722,667,667,611,
+  556,556,556,556,556,556,889,556,556,556,556,556,278,278,278,278,
+  611,611,611,611,611,611,611,584,611,611,611,611,611,556,611,556
+]
+};
+
+// i caratteri che Windows-1252 mette tra 128 e 159
+const PDF_CP = {0x20AC:128, 0x201A:130, 0x0192:131, 0x201E:132, 0x2026:133, 0x2020:134, 0x2021:135, 0x02C6:136, 0x2030:137,
+  0x0160:138, 0x2039:139, 0x0152:140, 0x017D:142, 0x2018:145, 0x2019:146, 0x201C:147, 0x201D:148, 0x2022:149, 0x2013:150,
+  0x2014:151, 0x02DC:152, 0x2122:153, 0x0161:154, 0x203A:155, 0x0153:156, 0x017E:158, 0x0178:159};
+// quello che Helvetica non sa scrivere si sostituisce con l'equivalente in lettere
+const PDF_SOST = {"→":"->", "←":"<-", "↑":"^", "↓":"v", "≥":">=", "≤":"<=", "≈":"~", "≠":"!=", "−":"-", "‐":"-", "‑":"-",
+  "‒":"-", "―":"-", "′":"'", "″":'"', "✗":"x", "✘":"x", "⚠":"!", "✓":"v", "✔":"v", "☑":"v", "☒":"x", "★":"*", "☆":"*",
+  "➜":"->", "➔":"->", "➡":"->", "⟶":"->", "⇒":"=>", "↔":"<->", "⇄":"<->"};
+
+// testo -> stringa di byte Windows-1252 (un carattere = un byte), senza quello che il font non può mostrare
+function pdfStr(testo){
+  let out = "";
+  for (const sorg of String(testo == null ? "" : testo).normalize("NFC")){
+    const ch = PDF_SOST[sorg] !== undefined ? PDF_SOST[sorg] : sorg;
+    for (const c of ch){
+      const cp = c.codePointAt(0);
+      if (cp === 9 || cp === 10 || cp === 13 || cp === 0xA0 || (cp >= 0x2000 && cp <= 0x200A) || cp === 0x2028 ||
+          cp === 0x2029 || cp === 0x202F || cp === 0x3000) out += " ";
+      else if (cp < 32 || cp === 127 || cp === 0xAD || (cp >= 0x200B && cp <= 0x200F) || (cp >= 0xFE00 && cp <= 0xFE0F) ||
+               cp === 0x2060 || cp === 0xFEFF) continue;
+      else if (cp < 127 || (cp >= 0xA1 && cp <= 0xFF)) out += c;
+      else if (PDF_CP[cp]) out += String.fromCharCode(PDF_CP[cp]);
+      else {
+        const base = c.normalize("NFD").charAt(0);               // una lettera con accento fuori dal set: la lettera base
+        if (base !== c && base.charCodeAt(0) >= 32 && base.charCodeAt(0) < 127) out += base;
+        else if (/[\p{Extended_Pictographic}\p{S}\p{M}\p{Cf}]/u.test(c)) continue;      // emoji, simboli e segni combinanti: si tolgono
+        else out += "?";
+      }
+    }
+  }
+  return out;
+}
+function pdfW(s, grassetto, corpo, tr){
+  const T = grassetto ? PDF_LARG.B : PDF_LARG.R;
+  let w = 0;
+  for (let i = 0; i < s.length; i++) w += T[s.charCodeAt(i) - 32] || 556;
+  return w * corpo / 1000 + (tr || 0) * s.length;
+}
+// una stringa PDF tra parentesi, con gli escape
+function pdfLit(s){
+  let o = "(";
+  for (let i = 0; i < s.length; i++){
+    const c = s.charCodeAt(i);
+    if (c === 40 || c === 41 || c === 92) o += "\\" + s.charAt(i);
+    else if (c < 32 || c > 126) o += "\\" + ("00" + c.toString(8)).slice(-3);
+    else o += s.charAt(i);
+  }
+  return o + ")";
+}
+// il testo a capo dove serve; una parola più lunga della riga si spezza in lettere
+function pdfSpezza(s, grassetto, corpo, max){
+  const righe = []; let cur = "";
+  String(s || "").split(" ").forEach(par => {
+    if (!par) return;
+    const prova = cur ? cur + " " + par : par;
+    if (pdfW(prova, grassetto, corpo) <= max){ cur = prova; return; }
+    if (cur){ righe.push(cur); cur = ""; }
+    while (pdfW(par, grassetto, corpo) > max && par.length > 1){
+      let n = par.length;
+      while (n > 1 && pdfW(par.slice(0, n), grassetto, corpo) > max) n--;
+      righe.push(par.slice(0, n)); par = par.slice(n);
+    }
+    cur = par;
+  });
+  if (cur) righe.push(cur);
+  return righe;
+}
+
+// "#4F9A94", "rgb(…)" o "hsl(h s% l%)" -> [r, g, b] da 0 a 1
+function pdfRGB(c){
+  const t = String(c || "").trim();
+  let m = t.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+  if (m){
+    let h = m[1]; if (h.length === 3) h = h.split("").map(x => x + x).join("");
+    return [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16) / 255);
+  }
+  m = t.match(/^rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)/i);
+  if (m) return [m[1], m[2], m[3]].map(x => Math.min(1, +x / 255));
+  m = t.match(/^hsla?\(\s*([\d.]+)(?:deg)?[\s,]+([\d.]+)%[\s,]+([\d.]+)%/i);
+  if (m){
+    const h = (+m[1] % 360) / 360, s = +m[2] / 100, l = +m[3] / 100;
+    const q = l < .5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q;
+    const f = t0 => {
+      let x = t0; if (x < 0) x += 1; if (x > 1) x -= 1;
+      return x < 1 / 6 ? p + (q - p) * 6 * x : x < .5 ? q : x < 2 / 3 ? p + (q - p) * (2 / 3 - x) * 6 : p;
+    };
+    return [f(h + 1 / 3), f(h), f(h - 1 / 3)];
+  }
+  return [0.45, 0.47, 0.47];
+}
+const pdfMix = (c, k) => c.map(x => x * k + (1 - k));             // il colore schiarito verso il bianco (k = 1 puro)
+const pdfLum = c => { const l = x => x <= .03928 ? x / 12.92 : Math.pow((x + .055) / 1.055, 2.4);
+                      return .2126 * l(c[0]) + .7152 * l(c[1]) + .0722 * l(c[2]); };
+// testo bianco o scuro, a seconda di quale si legge meglio sul colore
+const pdfTestoSu = c => 1.05 / (pdfLum(c) + .05) > (pdfLum(c) + .05) / (pdfLum(PDF_INK) + .05) ? [1, 1, 1] : PDF_INK;
+
+// il file: catalogo, pagine, due font di base, informazioni, e per ogni pagina il contenuto e la pagina
+function pdfFile(pagine, titolo){
+  const out = []; let pos = 0; const off = [];
+  const scrivi = t => { out.push(t); pos += t.length; };
+  const oggetto = (n, corpo) => { off[n] = pos; scrivi(n + " 0 obj\n" + corpo + "\nendobj\n"); };
+  scrivi("%PDF-1.4\n%\xE2\xE3\xCF\xD3\n");
+  oggetto(1, "<< /Type /Catalog /Pages 2 0 R /Lang (it-IT) >>");
+  oggetto(2, "<< /Type /Pages /Kids [" + pagine.map((_, i) => (7 + i * 2) + " 0 R").join(" ") + "] /Count " + pagine.length + " >>");
+  oggetto(3, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
+  oggetto(4, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>");
+  const ora = new Date(), p2 = x => String(x).padStart(2, "0");
+  oggetto(5, "<< /Title " + pdfLit(titolo) + " /Creator (Vasca) /Producer (Vasca) /CreationDate (D:" + ora.getFullYear() +
+    p2(ora.getMonth() + 1) + p2(ora.getDate()) + p2(ora.getHours()) + p2(ora.getMinutes()) + p2(ora.getSeconds()) + ") >>");
+  pagine.forEach((ops, i) => {
+    const flusso = ops.join("\n");
+    oggetto(6 + i * 2, "<< /Length " + flusso.length + " >>\nstream\n" + flusso + "\nendstream");
+    oggetto(7 + i * 2, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 " + PDF_W + " " + PDF_H + "] " +
+      "/Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents " + (6 + i * 2) + " 0 R >>");
+  });
+  const nOgg = 6 + pagine.length * 2, inizioXref = pos;
+  let x = "xref\n0 " + nOgg + "\n0000000000 65535 f \n";
+  for (let n = 1; n < nOgg; n++) x += String(off[n]).padStart(10, "0") + " 00000 n \n";
+  scrivi(x + "trailer\n<< /Size " + nOgg + " /Root 1 0 R /Info 5 0 R >>\nstartxref\n" + inizioXref + "\n%%EOF\n");
+  const testo = out.join(""), byte = new Uint8Array(testo.length);
+  for (let i = 0; i < testo.length; i++) byte[i] = testo.charCodeAt(i) & 255;
+  return byte;
+}
+
+/* ---- misure e piccoli aiuti comuni a tutti i PDF ---- */
+const PDF_M = 42, PDF_XR = PDF_W - PDF_M, PDF_YMAX = PDF_H - 54;
+const pdfOrdine = (a, c) => ((a.o || 0) - (c.o || 0)) || ((a.ts || 0) - (c.ts || 0));
+const pdfSlug = t => String(t).normalize("NFD").replace(/[^A-Za-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+const pdfNomeGruppo = gid => (GRUPPI.find(x => x.id === gid) || {}).nome || gid;
+const pdfZonaDati = id => ({zn: pdfStr(nomeZona(id)), zd: PDF_ZONE[id] ? pdfStr(PDF_ZONE[id]) : "", col: pdfRGB(colZona(id))});
+// 412 secondi di troppo: «~6 h 52 min»
+const pdfOreMin = sec => {
+  const m = Math.max(1, Math.round(sec / 60));
+  return "~" + (m >= 120 ? Math.floor(m / 60) + " h " + String(m % 60).padStart(2, "0") + " min" : m + " min");
+};
+// «12 – 18 ottobre 2026», «28 settembre – 4 ottobre 2026»
+function pdfIntervallo(i, f, sep){
+  sep = sep || " – ";
+  const a = new Date(i + "T12:00:00"), b = new Date(f + "T12:00:00");
+  const ma = NOMI_MESE[a.getMonth()], mb = NOMI_MESE[b.getMonth()];
+  if (a.getFullYear() !== b.getFullYear())
+    return a.getDate() + " " + ma + " " + a.getFullYear() + sep + b.getDate() + " " + mb + " " + b.getFullYear();
+  if (a.getMonth() !== b.getMonth()) return a.getDate() + " " + ma + sep + b.getDate() + " " + mb + " " + b.getFullYear();
+  return a.getDate() + sep + b.getDate() + " " + mb + " " + b.getFullYear();
+}
+// un testo troppo lungo per lo spazio finisce con tre puntini
+function pdfTronca(s, grassetto, corpo, max){
+  if (pdfW(s, grassetto, corpo) <= max) return s;
+  let n = s.length;
+  while (n > 1 && pdfW(s.slice(0, n) + "...", grassetto, corpo) > max) n--;
+  return s.slice(0, n).replace(/\s+$/, "") + "...";
+}
+
+/* ---- il documento: le pagine, e le primitive di disegno sulla pagina corrente (y si misura dall'alto) ---- */
+function pdfDocumento(){
+  const M = PDF_M, XR = PDF_XR;
+  const D = {pagine: [], ops: null};
+  const n2 = x => { const r = Math.round(x * 100) / 100; return String(r === 0 ? 0 : r); };
+  const col = (c, tratto) => c.map(n2).join(" ") + (tratto ? " RG" : " rg");
+  const Y = v => n2(PDF_H - v);
+  D.nuova = piede => { D.ops = []; D.pagine.push({ops: D.ops, piede: piede || ""}); };
+  D.rect = (x, top, w, h, c) => { D.ops.push(col(c) + " " + n2(x) + " " + Y(top + h) + " " + n2(w) + " " + n2(h) + " re f"); };
+  D.rrect = (x, top, w, h, r, c, sx, dx, tratto, sp) => {
+    const k = .5523, rs = sx ? r : 0, rd = dx ? r : 0, b = PDF_H - top - h, t = b + h;
+    D.ops.push((tratto ? n2(sp) + " w " : "") + col(c, tratto) + " " + [
+      n2(x + rs) + " " + n2(b) + " m",
+      n2(x + w - rd) + " " + n2(b) + " l",
+      n2(x + w - rd + k * rd) + " " + n2(b) + " " + n2(x + w) + " " + n2(b + rd - k * rd) + " " + n2(x + w) + " " + n2(b + rd) + " c",
+      n2(x + w) + " " + n2(t - rd) + " l",
+      n2(x + w) + " " + n2(t - rd + k * rd) + " " + n2(x + w - rd + k * rd) + " " + n2(t) + " " + n2(x + w - rd) + " " + n2(t) + " c",
+      n2(x + rs) + " " + n2(t) + " l",
+      n2(x + rs - k * rs) + " " + n2(t) + " " + n2(x) + " " + n2(t - rs + k * rs) + " " + n2(x) + " " + n2(t - rs) + " c",
+      n2(x) + " " + n2(b + rs) + " l",
+      n2(x) + " " + n2(b + rs - k * rs) + " " + n2(x + rs - k * rs) + " " + n2(b) + " " + n2(x + rs) + " " + n2(b) + " c",
+      tratto ? "h S" : "h f"].join(" "));
+  };
+  D.filo = (x1, x2, top, c, sp) => { D.ops.push(col(c, true) + " " + n2(sp) + " w " + n2(x1) + " " + Y(top) + " m " + n2(x2) + " " + Y(top) + " l S"); };
+  D.testo = (x, base, s, b, corpo, c, tr) => {
+    if (!s) return;
+    D.ops.push("BT /" + (b ? "F2" : "F1") + " " + n2(corpo) + " Tf " + col(c) + " " + n2(tr || 0) + " Tc " + n2(x) + " " + Y(base) + " Td " + pdfLit(s) + " Tj ET");
+  };
+  D.destra = (xr, base, s, b, corpo, c, tr) => D.testo(xr - pdfW(s, b, corpo, tr), base, s, b, corpo, c, tr);
+  D.centro = (xc, base, s, b, corpo, c, tr) => D.testo(xc - pdfW(s, b, corpo, tr) / 2, base, s, b, corpo, c, tr);
+
+  // una barra a segmenti: ogni voce col suo colore, larga wTot quando la somma è tot
+  D.barra = (x, top, wTot, h, parti, tot) => {
+    const n = parti.length, gap = 1.5, utile = Math.max(2, wTot - gap * (n - 1));
+    let xb = x;
+    parti.forEach((v, k) => {
+      const ww = Math.max(2, utile * v.v / tot), r = Math.min(h / 2, ww / 2);
+      D.rrect(xb, top, ww, h, r, v.c, k === 0, k === n - 1);
+      if (k > 0 && k < n - 1) D.rect(xb, top, ww, h, v.c);
+      xb += ww + gap;
+    });
+  };
+
+  // il gettone della zona: «En-2» pieno e «SOGLIA 30» su fondo chiaro, nello stesso pezzo
+  const ZS = 9;
+  D.pillDim = d => ({a: pdfW(d.zn, true, ZS) + 12, b: d.zd ? pdfW(d.zd, true, ZS) + 12 : 0});
+  D.pill = (x, top, d) => {
+    const p = D.pillDim(d), hh = 17, r = hh / 2;
+    if (p.b){
+      D.rrect(x, top, p.a + p.b, hh, r, pdfMix(d.col, .22), true, true);
+      D.rrect(x, top, p.a, hh, r, d.col, true, true); D.rect(x + p.a - r, top, r, hh, d.col);
+    } else D.rrect(x, top, p.a, hh, r, d.col, true, true);
+    D.testo(x + 6, top + 11.9, d.zn, true, ZS, pdfTestoSu(d.col));
+    if (p.b) D.testo(x + p.a + 6, top + 11.9, d.zd, true, ZS, PDF_INK);
+  };
+
+  // testata della prima pagina: il nome grande, i metri a destra, due righe di dettagli; restituisce dove cominciare
+  D.testata = o => {
+    const un = pdfStr(" m"), mt = pdfStr(o.grande), dx = o.dx ? pdfStr(o.dx) : "", sd = o.sottoDx ? pdfStr(o.sottoDx) : "";
+    const sx = pdfTronca(pdfStr(o.sx), false, 13, XR - M - (dx ? pdfW(dx, false, 11) + 14 : 0));
+    const sotto = pdfTronca(o.sotto ? pdfStr(o.sotto) : "", false, 10, XR - M - (sd ? pdfW(sd, false, 10) + 14 : 0));
+    D.testo(M, 68, pdfStr(String(o.nome).toUpperCase()), true, 26, PDF_INK, .6);
+    D.testo(XR - pdfW(un, true, 13), 68, un, true, 13, PDF_INK);
+    D.testo(XR - pdfW(un, true, 13) - pdfW(mt, true, 26), 68, mt, true, 26, PDF_INK);
+    D.testo(M, 90, sx, false, 13, PDF_INK);
+    if (dx) D.destra(XR, 90, dx, false, 11, PDF_GRIGIO);
+    if (sotto) D.testo(M, 105, sotto, false, 10, PDF_GRIGIO);
+    if (sd) D.destra(XR, 105, sd, false, 10, PDF_GRIGIO);
+    const base = (sotto || sd) ? 116 : 101;
+    D.filo(M, XR, base, PDF_INK, 1.3);
+    return base + 10;
+  };
+  // testata delle pagine che seguono, più piccola
+  D.testataPiccola = (nome, resto) => {
+    const n = pdfStr(String(nome).toUpperCase());
+    D.testo(M, 56, n, true, 13, PDF_INK, .5);
+    D.testo(M + pdfW(n, true, 13, .5) + 10, 56, pdfStr(resto), false, 11, PDF_GRIGIO);
+    D.filo(M, XR, 66, PDF_INK, 1);
+    return 76;
+  };
+
+  // a piè di pagina: dove sei e, se serve, il numero; poi il file
+  D.chiudi = titolo => {
+    const N = D.pagine.length;
+    D.pagine.forEach((p, i) => {
+      D.ops = p.ops;
+      D.filo(M, XR, PDF_H - 42, PDF_FILO, .6);
+      D.testo(M, PDF_H - 29, p.piede, false, 8, PDF_GRIGIO);
+      if (N > 1) D.destra(XR, PDF_H - 29, pdfStr("Pagina " + (i + 1) + " di " + N), false, 8, PDF_GRIGIO);
+    });
+    return pdfFile(D.pagine.map(p => p.ops), titolo);
+  };
+  return D;
+}
+
+/* ---- il riepilogo delle zone (barra e legenda) e degli stili; vale per una seduta, una settimana, i tre gruppi ---- */
+function pdfRiepilogo(D, y, titolo, zs, st, tot, nuovaPag){
+  const M = PDF_M, XR = PDF_XR;
+  const zone = voci("zona").filter(id => zs[id] > 0), stili = voci("stile").filter(id => st[id] > 0);
+  const righeZone = Math.ceil(zone.length / 2);
+  const serve = 14 + 12 + 11 + 14 + righeZone * 23 + (stili.length ? 30 : 0);
+  if (y + serve > PDF_YMAX) y = nuovaPag();
+  y += 14;
+  D.testo(M, y + 9, pdfStr(titolo), true, 8.5, PDF_GRIGIO, 1.2);
+  y += 16;
+  D.barra(M, y, XR - M, 10, zone.map(id => ({v: zs[id], c: pdfRGB(colZona(id))})), tot);
+  y += 10 + 14;
+  const cella = (XR - M - 16) / 2;
+  zone.forEach((id, k) => {
+    const cx = M + (k % 2) * (cella + 16), cy = y + Math.floor(k / 2) * 23;
+    D.pill(cx, cy, pdfZonaDati(id));
+    D.destra(cx + cella - 36, cy + 12.4, pdfStr(fmt(zs[id]) + " m"), true, 10.5, PDF_INK);
+    D.destra(cx + cella, cy + 12.4, pdfStr(Math.round(zs[id] / tot * 100) + "%"), false, 10.5, PDF_GRIGIO);
+  });
+  y += righeZone * 23;
+  if (stili.length){
+    y += 4;
+    pdfSpezza(pdfStr("Stili: " + stili.map(id => nomeStile(id) + " " + Math.round(st[id] / tot * 100) + "%").join(" · ")),
+      false, 10.5, XR - M).forEach(t => { D.testo(M, y + 10, t, false, 10.5, PDF_NOTA); y += 13; });
+  }
+  return y;
+}
+
+/* ---- la seduta: a sinistra il blocco, poi le serie una per riga, e in fondo il riepilogo ---- */
+function pdfDisegnaSeduta(D, lista, iso, gid){
+  const M = PDF_M, XR = PDF_XR, YMAX = PDF_YMAX, G = 80, XB = M + G;
+  const nomeG = pdfNomeGruppo(gid);
+  const {rect, rrect, filo, testo, destra, pill} = D;
+  let y = 0, nPag = 0;
+
+  // ---- i dati della seduta
+  const tot = totale(lista), dur = durataSeduta(lista), zs = sommaZone(lista), st = sommaStili(lista);
+  const w = settimanaDi(iso, gid);
+  const dataTxt = dataLunga(iso) + " " + iso.slice(0, 4);
+  const contesto = w.w != null ? "Settimana " + w.w + " · " + w.m : "";
+  const piede = pdfStr("Vasca · " + nomeG + " · " + dataTxt);
+  const dati = lista.map(s => {
+    const base = s.r > 1 ? s.r + "×" + s.m : String(s.m);
+    return {s: s, col: pdfRGB(colZona(s.z)),
+      qty: pdfStr(giriDi(s) > 1 ? giriDi(s) + "×(" + base + ")" : base),
+      stile: pdfStr(String(nomeStile(s.s)).toUpperCase()),
+      zn: pdfStr(nomeZona(s.z)), zd: PDF_ZONE[s.z] ? pdfStr(PDF_ZONE[s.z]) : "",
+      part: s.p ? pdfStr("p" + s.p) : "",
+      att: s.a && s.a.length ? pdfStr(s.a.join(" + ")) : "",
+      nota: s.n ? pdfStr(s.n) : "",
+      m: pdfStr(fmt(metriDi(s))), t: pdfStr(minuti(durataSerie(s)))};
+  });
+
+  // ---- colonne: larghe quanto serve alla seduta, così le righe si allineano
+  const QS = 17, PS = 12.5;
+  const massimo = f => Math.max.apply(null, dati.map(f));
+  const xQ = XB + 14, xS = xQ + massimo(d => pdfW(d.qty, true, QS)) + 12, xZ = xS + massimo(d => pdfW(d.stile, true, QS)) + 12;
+  const xP = xZ + massimo(d => { const p = D.pillDim(d); return p.a + p.b; }) + 12;
+  const wMe = massimo(d => pdfW(d.m, true, 16)) + 6, wPa = massimo(d => d.part ? pdfW(d.part, true, PS) + 14 : 0);
+  const partSotto = xP + wPa > XR - wMe - 8;               // se non c'è posto, la partenza scende sulla riga dei dettagli
+  dati.forEach(d => {
+    const extra = [], meta = [partSotto ? d.part : "", d.att].filter(Boolean).join("    ");
+    if (meta) extra.push({t: meta, b: true, c: PDF_INK});
+    pdfSpezza(d.nota, false, 10.5, XR - xQ - 46).forEach(t => extra.push({t: t, b: false, c: PDF_NOTA}));
+    if (extra.length > 40){ extra.length = 40; extra[39].t = extra[39].t.slice(0, -3) + "..."; }
+    d.extra = extra;
+    d.h = extra.length ? 38 + extra.length * 13 : 35;
+  });
+
+  const nuovaPagina = () => {
+    D.nuova(piede);
+    y = nPag++ === 0
+      ? D.testata({nome: nomeG, grande: fmt(tot), sx: dataTxt, dx: "~" + dur.min + " min · " + lista.length + " serie", sotto: contesto})
+      : D.testataPiccola(nomeG, dataTxt + " · segue");
+  };
+  // una serie: il blocco a sinistra (solo sulla prima riga), la zona, la quantità, lo stile, il gettone della zona, la partenza, i metri
+  const riga = (d, top, h, gut, fineBlocco) => {
+    const B1 = top + 23;
+    rect(XB, top + 5, 4, h - 10, d.col);
+    if (gut){
+      gut.righe.forEach((t, k) => testo(M, top + 16 + k * 10.5, t, true, 8, PDF_INK));
+      testo(M, top + 16 + (gut.righe.length - 1) * 10.5 + 12, gut.sub, false, 8, PDF_GRIGIO);
+    }
+    testo(xQ, B1, d.qty, true, QS, PDF_INK);
+    testo(xS, B1, d.stile, true, QS, PDF_INK);
+    pill(xZ, B1 - 14.5, d);
+    if (d.part && !partSotto){
+      rrect(xP, B1 - 15.5, pdfW(d.part, true, PS) + 12, 19, 5, PDF_INK, true, true, true, 1.1);
+      testo(xP + 6, B1 - 1.5, d.part, true, PS, PDF_INK);
+    }
+    destra(XR, B1, d.m, true, 16, PDF_INK);
+    destra(XR, B1 + 11, d.t, false, 8.5, PDF_GRIGIO);
+    d.extra.forEach((e, k) => testo(xQ, B1 + 19 + k * 13, e.t, e.b, 10.5, e.c));
+    if (fineBlocco) filo(M, XR, top + h, [0.45, 0.48, 0.48], .9); else filo(XB, XR, top + h, PDF_FILO, .6);
+  };
+
+  // ---- la seduta, blocco per blocco; una riga non si spezza mai tra due pagine
+  nuovaPagina();
+  let corrente = null;
+  lista.forEach((s, i) => {
+    const d = dati[i], nuovo = s.b !== corrente;
+    const gutter = seguito => {
+      const righe = pdfSpezza(pdfStr(String(PDF_BLOCCO[s.b] || nomeBlocco(s.b)).toUpperCase()), true, 8, G - 8);
+      let sub = "segue";
+      if (!seguito){
+        const corsa = [];
+        for (let j = i; j < lista.length && lista[j].b === s.b; j++) corsa.push(lista[j]);
+        sub = pdfStr(fmt(totale(corsa)) + " m · " + minuti(corsa.reduce((a, x) => a + durataSerie(x), 0) + CAMBIO_BLOCCO));
+      }
+      return {righe: righe, sub: sub, h: 36 + (righe.length - 1) * 10.5};
+    };
+    let gut = nuovo ? gutter(false) : null, h = Math.max(d.h, gut ? gut.h : 0);
+    if (y + h > YMAX){
+      nuovaPagina();
+      if (!nuovo){ gut = gutter(true); h = Math.max(d.h, gut.h); }
+    }
+    riga(d, y, h, gut, i === lista.length - 1 || lista[i + 1].b !== s.b);
+    y += h; corrente = s.b;
+  });
+  pdfRiepilogo(D, y, "RIEPILOGO", zs, st, tot, () => { nuovaPagina(); return y; });
+}
+
+/* ---- la settimana di un gruppo: i giorni con le loro sedute, le zone, gli stili ---- */
+function pdfDatiSettimana(gid, rif){
+  const w = settimanaDi(rif, gid), lista = serieDi(gid, w.i, w.f), giorni = [];
+  for (let x = new Date(w.i + "T12:00:00"); x <= new Date(w.f + "T12:00:00"); x.setDate(x.getDate() + 1)){
+    const iso = x.toISOString().slice(0, 10), gl = lista.filter(s => s.d === iso).sort(pdfOrdine);
+    giorni.push({iso: iso, gl: gl, tot: totale(gl), zone: sommaZone(gl), dur: gl.length ? durataSeduta(gl) : null});
+  }
+  return {gid: gid, nomeG: pdfNomeGruppo(gid), w: w, lista: lista, giorni: giorni,
+          tot: totale(lista), zone: sommaZone(lista), stili: sommaStili(lista)};
+}
+const pdfPianoTesto = (w, tot) => {
+  if (!w.t) return "";
+  const d = w.t - tot;
+  return "piano " + fmt(w.t) + " m" + (d > 0 ? " · mancano " + fmt(d) + " m" : d < 0 ? " · oltre di " + fmt(-d) + " m" : " · in pari");
+};
+const pdfEtichettaSett = w => w.w ? "Settimana " + w.w : "Fuori dal piano";
+
+function pdfDisegnaSettimana(D, dat){
+  const M = PDF_M, XR = PDF_XR, YMAX = PDF_YMAX;
+  const w = dat.w, nomeG = dat.nomeG, giorni = dat.giorni;
+  const nSed = giorni.filter(g => g.gl.length).length;
+  const secTot = giorni.reduce((a, g) => a + (g.dur ? g.dur.sec : 0), 0);
+  const piede = pdfStr("Vasca · " + nomeG + " · " + pdfEtichettaSett(w) + " · " + pdfIntervallo(w.i, w.f));
+  let y = 0, nPag = 0;
+  const nuovaPag = () => {
+    D.nuova(piede);
+    y = nPag++ === 0
+      ? D.testata({nome: nomeG, grande: fmt(dat.tot), sx: pdfEtichettaSett(w) + " · " + pdfIntervallo(w.i, w.f),
+          dx: nSed + (nSed === 1 ? " seduta" : " sedute") + " · " + pdfOreMin(secTot),
+          sotto: [w.w ? w.m : "", w.ga ? "Gara: " + w.ga : ""].filter(Boolean).join(" · "), sottoDx: pdfPianoTesto(w, dat.tot)})
+      : D.testataPiccola(nomeG, pdfEtichettaSett(w) + " · segue");
+    return y;
+  };
+  const assicura = h => { if (y + h > YMAX) nuovaPag(); };
+  nuovaPag();
+
+  // ---- giorno per giorno: un rigo per giorno, con la barra delle zone
+  const maxTot = Math.max(1, ...giorni.map(g => g.tot));
+  const nomi = giorni.map(g => pdfStr(dataLunga(g.iso)));
+  const xBarra = M + Math.max(...nomi.map(n => pdfW(n, true, 11))) + 16, wBarra = XR - 108 - xBarra;
+  assicura(16 + 36);
+  D.testo(M, y + 9, pdfStr("GIORNO PER GIORNO"), true, 8.5, PDF_GRIGIO, 1.2);
+  D.destra(XR - 58, y + 9, pdfStr("METRI"), true, 7.5, PDF_GRIGIO, .8);
+  D.destra(XR, y + 9, pdfStr("DURATA"), true, 7.5, PDF_GRIGIO, .8);
+  y += 16;
+  D.filo(M, XR, y, PDF_INK, .9);
+  giorni.forEach((g, i) => {
+    const h = g.gl.length ? 36 : 24;
+    assicura(h);
+    if (g.gl.length){
+      D.testo(M, y + 16, nomi[i], true, 11, PDF_INK);
+      D.testo(M, y + 28, pdfStr(g.gl.length + " serie"), false, 8.5, PDF_GRIGIO);
+      D.barra(xBarra, y + 10, wBarra * g.tot / maxTot, 12,
+        voci("zona").filter(id => g.zone[id] > 0).map(id => ({v: g.zone[id], c: pdfRGB(colZona(id))})), g.tot);
+      D.destra(XR - 58, y + 21, pdfStr(fmt(g.tot)), true, 14, PDF_INK);
+      D.destra(XR, y + 21, pdfStr(pdfOreMin(g.dur.sec)), false, 9, PDF_GRIGIO);
+    } else {
+      D.testo(M, y + 15.5, nomi[i], false, 10.5, PDF_GRIGIO);
+      D.testo(xBarra, y + 15.5, pdfStr("nessuna seduta"), false, 9.5, PDF_GRIGIO);
+    }
+    D.filo(M, XR, y + h, PDF_FILO, .6);
+    y += h;
+  });
+
+  // ---- le zone rispetto al piano: il fatto a barra, il piano come tacca
+  const pianoZ = {en1: w.e1, tec: w.tc, en2: w.e2, en3: w.e3, sp: w.sp};
+  const zoneVis = voci("zona").filter(id => (dat.zone[id] || 0) > 0 || (pianoZ[id] || 0) > 0);
+  if (zoneVis.length){
+    const dd = zoneVis.map(id => Object.assign({id: id}, pdfZonaDati(id)));
+    const xB0 = M + Math.max(...dd.map(d => { const p = D.pillDim(d); return p.a + p.b; })) + 16, xB1 = XR - 130;
+    const scala = Math.max(1, ...zoneVis.map(id => Math.max(dat.zone[id] || 0, pianoZ[id] || 0))) * 1.06;
+    y += 14;
+    assicura(16 + 27);
+    D.testo(M, y + 9, pdfStr(w.t ? "ZONE RISPETTO AL PIANO" : "ZONE"), true, 8.5, PDF_GRIGIO, 1.2);
+    y += 16;
+    dd.forEach(d => {
+      assicura(27);
+      const f = dat.zone[d.id] || 0, p = pianoZ[d.id] || 0;
+      D.pill(M, y + 5, d);
+      D.rrect(xB0, y + 9.5, xB1 - xB0, 8, 4, PDF_FASCIA, true, true);
+      if (f > 0) D.rrect(xB0, y + 9.5, Math.max(4, (xB1 - xB0) * f / scala), 8, 4, d.col, true, true);
+      if (p > 0) D.rect(xB0 + (xB1 - xB0) * p / scala - .7, y + 6, 1.4, 15, PDF_INK);
+      D.destra(XR - 70, y + 17, pdfStr(fmt(f) + " m"), true, 10.5, PDF_INK);
+      if (p > 0){
+        D.destra(XR, y + 12, pdfStr("piano " + fmt(p)), false, 9, PDF_GRIGIO);
+        D.destra(XR, y + 22, pdfStr(p > f ? "mancano " + fmt(p - f) : p < f ? "oltre di " + fmt(f - p) : "in pari"), false, 8, PDF_GRIGIO);
+      }
+      y += 27;
+    });
+  }
+  // ---- gli stili e, se serve, un'altra pagina per le zone che avanzano
+  const stili = voci("stile").filter(id => dat.stili[id] > 0);
+  if (stili.length && dat.tot > 0){
+    y += 8;
+    pdfSpezza(pdfStr("Stili: " + stili.map(id => nomeStile(id) + " " + Math.round(dat.stili[id] / dat.tot * 100) + "%").join(" · ")),
+      false, 10.5, XR - M).forEach(t => { assicura(16); D.testo(M, y + 10, t, false, 10.5, PDF_NOTA); y += 13; });
+  }
+
+  // ---- poi le sedute, una pagina (o più) per giorno
+  giorni.forEach(g => { if (g.gl.length) pdfDisegnaSeduta(D, g.gl, g.iso, dat.gid); });
+}
+
+/* ---- i tre gruppi insieme: una pagina di confronto, poi la settimana di ciascuno ---- */
+function pdfDisegnaTreGruppi(D, dati){
+  const M = PDF_M, XR = PDF_XR, YMAX = PDF_YMAX;
+  const con = dati.filter(d => d.lista.length);
+  const wRif = (dati.find(d => d.w.w) || dati[0]).w;
+  const comune = dati.every(d => d.w.w === wRif.w && d.w.i === wRif.i && d.w.f === wRif.f);
+  const da = dati.map(d => d.w.i).sort()[0], a = dati.map(d => d.w.f).sort().pop();
+  const etichetta = comune ? pdfEtichettaSett(wRif) + " · " + pdfIntervallo(wRif.i, wRif.f) : pdfIntervallo(da, a);
+  const nSed = con.reduce((n, d) => n + d.giorni.filter(g => g.gl.length).length, 0);
+  const totAll = dati.reduce((s, d) => s + d.tot, 0);
+  const zAll = {}, sAll = {};
+  voci("zona").forEach(id => { zAll[id] = dati.reduce((s, d) => s + (d.zone[id] || 0), 0); });
+  voci("stile").forEach(id => { sAll[id] = dati.reduce((s, d) => s + (d.stili[id] || 0), 0); });
+  const isoGiorni = [];
+  for (let x = new Date(da + "T12:00:00"); x <= new Date(a + "T12:00:00"); x.setDate(x.getDate() + 1)) isoGiorni.push(x.toISOString().slice(0, 10));
+  const giornoDi = (d, iso) => d.giorni.find(g => g.iso === iso) || {iso: iso, gl: [], tot: 0, zone: {}, dur: null};
+  const maxAll = Math.max(1, ...dati.map(d => Math.max(0, ...isoGiorni.map(iso => giornoDi(d, iso).tot))));
+  const piede = pdfStr("Vasca · Tutti i gruppi · " + etichetta);
+  let y = 0, nPag = 0;
+  const nuovaPag = () => {
+    D.nuova(piede);
+    y = nPag++ === 0
+      ? D.testata({nome: "Tutti i gruppi", grande: fmt(totAll), sx: etichetta,
+          dx: nSed + (nSed === 1 ? " seduta" : " sedute") + " · " +
+              (con.length === dati.length ? con.length + " gruppi" : con.length + (con.length === 1 ? " gruppo" : " gruppi") + " su " + dati.length),
+          sotto: comune && wRif.w ? wRif.m : ""})
+      : D.testataPiccola("Tutti i gruppi", etichetta + " · segue");
+    return y;
+  };
+  nuovaPag();
+
+  const CH = 56, cw = (XR - M) / isoGiorni.length, bw = Math.min(30, cw * .46);
+  dati.forEach(d => {
+    const nome = pdfStr(d.nomeG), conSed = d.lista.length > 0;
+    const BH = conSed ? 34 + CH + 36 + 8 : 50;
+    if (y + BH > YMAX) nuovaPag();
+    const top = y;
+    D.testo(M, top + 14, nome, true, 14, PDF_INK);
+    if (d.w.w && !comune) D.testo(M + pdfW(nome, true, 14) + 10, top + 14, pdfStr(pdfEtichettaSett(d.w) + " · " + d.w.m), false, 9.5, PDF_GRIGIO);
+    if (conSed){
+      D.destra(XR, top + 14, pdfStr(fmt(d.tot) + " m"), true, 14, PDF_INK);
+      if (d.w.t) D.destra(XR, top + 26, pdfStr(pdfPianoTesto(d.w, d.tot)), false, 9, PDF_GRIGIO);
+      const yb = top + 34 + CH;
+      isoGiorni.forEach((iso, k) => {
+        const g = giornoDi(d, iso), cx = M + cw * k + cw / 2;
+        if (g.tot > 0){
+          let alto = 0;
+          voci("zona").forEach(id => {
+            const hh = CH * (g.zone[id] || 0) / maxAll;
+            if (hh > 0){ D.rect(cx - bw / 2, yb - alto - hh, bw, hh, pdfRGB(colZona(id))); alto += hh; }
+          });
+        } else D.rect(cx - bw / 2, yb - 1.2, bw, 1.2, PDF_FILO);
+        D.centro(cx, yb + 11, pdfStr(GIORNI[gg(iso)].toUpperCase() + " " + new Date(iso + "T12:00:00").getDate()), true, 7.5, PDF_GRIGIO, .5);
+        if (g.tot > 0){
+          D.centro(cx, yb + 22, pdfStr(fmt(g.tot)), true, 9.5, PDF_INK);
+          D.centro(cx, yb + 32, pdfStr(minuti(g.dur.sec)), false, 7.5, PDF_GRIGIO);
+        } else D.centro(cx, yb + 22, pdfStr("–"), false, 9.5, PDF_GRIGIO);
+      });
+    } else D.testo(M, top + 36, pdfStr("nessuna seduta in questa settimana"), false, 10, PDF_GRIGIO);
+    D.filo(M, XR, top + BH - 2, PDF_FILO, .6);
+    y += BH + 4;
+  });
+  if (totAll > 0) pdfRiepilogo(D, y, "ZONE, TUTTI I GRUPPI", zAll, sAll, totAll, nuovaPag);
+}
+
+/* ---- i quattro PDF: ognuno restituisce {nome, byte, pagine}, o null se non c'è niente da stampare ---- */
+function pdfSeduta(lista, iso, gid){
+  const D = pdfDocumento(), nomeG = pdfNomeGruppo(gid);
+  pdfDisegnaSeduta(D, lista, iso, gid);
+  const giorno = iso.slice(8, 10) + "/" + iso.slice(5, 7) + "/" + iso.slice(0, 4);
+  return {nome: pdfSlug(nomeG) + "-" + iso + ".pdf", byte: D.chiudi(pdfStr(nomeG + " - " + giorno)), pagine: D.pagine.length};
+}
+function pdfSedutaTre(iso){
+  const D = pdfDocumento(); let n = 0;
+  GRUPPI.forEach(g => {
+    const lista = serie.filter(x => x.d === iso && x.g === g.id).sort(pdfOrdine);
+    if (lista.length){ pdfDisegnaSeduta(D, lista, iso, g.id); n++; }
+  });
+  if (!n) return null;
+  const giorno = iso.slice(8, 10) + "/" + iso.slice(5, 7) + "/" + iso.slice(0, 4);
+  return {nome: "Tutti-i-gruppi-" + iso + ".pdf", byte: D.chiudi(pdfStr("Tutti i gruppi - " + giorno)), pagine: D.pagine.length};
+}
+function pdfSettimana(gid, rif){
+  const dat = pdfDatiSettimana(gid, rif);
+  if (!dat.lista.length) return null;
+  const D = pdfDocumento(), w = dat.w;
+  pdfDisegnaSettimana(D, dat);
+  return {nome: pdfSlug(dat.nomeG) + "-settimana-" + (w.w || w.i) + ".pdf",
+          byte: D.chiudi(pdfStr(dat.nomeG + " - " + pdfEtichettaSett(w).toLowerCase() + " (" + pdfIntervallo(w.i, w.f, "-") + ")")),
+          pagine: D.pagine.length};
+}
+function pdfSettimanaTre(rif){
+  const dati = GRUPPI.map(g => pdfDatiSettimana(g.id, rif));
+  if (!dati.some(d => d.lista.length)) return null;
+  const D = pdfDocumento(), w = (dati.find(d => d.w.w) || dati[0]).w;
+  pdfDisegnaTreGruppi(D, dati);
+  dati.forEach(d => { if (d.lista.length) pdfDisegnaSettimana(D, d); });
+  return {nome: "Tutti-i-gruppi-settimana-" + (w.w || w.i) + ".pdf",
+          byte: D.chiudi(pdfStr("Tutti i gruppi - " + pdfEtichettaSett(w).toLowerCase() + " (" + pdfIntervallo(w.i, w.f, "-") + ")")),
+          pagine: D.pagine.length};
+}
+
+/* ---- i pulsanti: scarica il file; sul telefono, dove si può, apre il foglio di condivisione (salva, stampa, WhatsApp) ---- */
+function pdfConsegna(b, costruisci){
+  const et = b.dataset.et || b.textContent;
+  b.dataset.et = et;
+  const rimetti = () => { b.textContent = et; b.classList.remove("fatto"); };
+  const esito = (testo, ok) => { b.textContent = testo; b.classList.toggle("fatto", !!ok); setTimeout(rimetti, 1600); };
+  let pdf;
+  try { pdf = costruisci(); }
+  catch(e){ try { console.error(e); } catch(x){} return esito("Non riesco", false); }
+  if (!pdf) return esito("Vuota", false);
+  const blob = new Blob([pdf.byte], {type: "application/pdf"});
+  const tocco = !!(window.matchMedia && window.matchMedia("(pointer: coarse)").matches);
+  let file = null;
+  try { file = new File([blob], pdf.nome, {type: "application/pdf"}); } catch(e){}
+  if (tocco && file){
+    try {
+      if (navigator.canShare && navigator.canShare({files: [file]})){
+        navigator.share({files: [file], title: pdf.nome}).then(() => esito("Fatto", true), e => {
+          if (e && e.name === "AbortError") return rimetti();
+          scarica(pdf.nome, blob, "application/pdf"); esito("Fatto", true);
+        });
+        return;
+      }
+    } catch(e){}
+  }
+  scarica(pdf.nome, blob, "application/pdf");
+  esito("Fatto", true);
+}
+document.getElementById("pdf").onclick = function(){
+  pdfConsegna(this, () => {
+    const d = document.getElementById("data").value, g = pref.gruppo;
+    const lista = serie.filter(x => x.d === d && x.g === g).sort(pdfOrdine);
+    return lista.length ? pdfSeduta(lista, d, g) : null;
+  });
+};
+document.getElementById("pdf3").onclick = function(){ pdfConsegna(this, () => pdfSedutaTre(document.getElementById("data").value)); };
+document.getElementById("w-pdf").onclick = function(){ pdfConsegna(this, () => pdfSettimana(pref.gruppo, dataSettimana())); };
+document.getElementById("w-pdf3").onclick = function(){ pdfConsegna(this, () => pdfSettimanaTre(dataSettimana())); };
 
 /* ============ navigazione e avvio ============ */
 function disegnaTutto(){
