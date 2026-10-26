@@ -527,6 +527,23 @@ details.incolla textarea{margin-top:8px}
 .w-var-testa .num{font-size:15px; color:var(--nebbia); white-space:nowrap}
 .giorno{position:relative}
 .giorno .var-punto{position:absolute; top:3px; right:5px; width:7px; height:7px; border-radius:50%; background:var(--sabbia)}
+
+/* il documento dice che la seduta deve essere diversa */
+.dev-avviso{display:flex; flex-direction:column; gap:8px; margin:2px 0 12px}
+.dev-riga{display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:10px 12px;
+  border-radius:var(--r-m); border:1px solid var(--bordo); font-size:14px; line-height:1.45}
+.dev-riga.da-fare{border:1px solid var(--rame); background:rgba(192,116,80,.14); color:var(--piastrella)}
+.dev-riga.fatta{border-color:var(--bordo); color:var(--nebbia)}
+.dev-riga.muta{color:var(--nebbia)}
+.dev-testo{min-width:0; flex:1}
+.dev-testo b{font-family:var(--f-num); font-weight:600}
+.dev-testo small{display:block; margin-top:3px; font-size:13px; color:var(--nebbia); overflow-wrap:anywhere}
+.dev-riga .chip{flex:none}
+.chip.da-fare{border-style:dashed; border-color:var(--rame)}
+.chip.muto{opacity:.65; cursor:default}
+.w-var-nota{margin:-2px 0 8px; font-size:13px; color:var(--nebbia)}
+.giorno .var-punto.da-fare{background:transparent; box-shadow:inset 0 0 0 1.5px var(--sabbia)}
+@media (max-width:520px){ .dev-riga{flex-direction:column; gap:8px} }
 /* ============ navigazione ============ */
 nav{position:fixed; left:0; right:0; bottom:0; z-index:30; display:flex; justify-content:center;
   background:rgba(13,19,19,.94); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
@@ -679,6 +696,7 @@ def 1x200 mx en1 // social"></textarea>
               <button id="pdf3" class="btn-pdf" title="Scarica la seduta di tutti e 3 i gruppi in un solo PDF">PDF 3 gruppi</button>
             </div>
           </div>
+          <div class="dev-avviso" id="dev-avviso" hidden></div>
           <div class="varianti" id="varianti" hidden></div>
           <div class="pannello">
             <div class="quadrante" id="durata-seduta"></div>
@@ -2139,18 +2157,142 @@ function lpCompattaScheda(s){
   return s;
 }
 
+/* ---------- sedute diverse: chi, in quali giorni, che cosa cambia ----------
+   Il documento lo dice in due modi. Una tabella «Giorno | Metri | … | Nome, rispetto al gruppo» dà la settimana
+   giorno per giorno. Una nota con «deviazione individuale» (o «settimana individuale») dà un solo giorno.
+   Il risultato è un elenco {n: nome, t: titolo, x: riassunto, gg: [{i: data, m: metri, x: testo, k}]}
+   con k = 0 seduta diversa da scrivere, 1 come il gruppo, 2 nessuna seduta (gara o libero). */
+const LP_DEV_GIORNO = {lun: 0, mar: 1, mer: 2, gio: 3, ven: 4, sab: 5, dom: 6};
+const LP_DEV_NON_NOMI = /^(come|gruppo|test|nota|note|decisione|verifica|perché|attenzione|regola|il|lo|la|le|tutti|nessun|nessuno|nessuna|secco|sett|settimana|seduta|giorno|che|per|con|dopo|prima|rispetto|ripetizione|tabella|vedi|stato)$/i;
+const LP_DEV_TRACCIA = /deviazion[ei]\s+individual|settiman[ae]\s+individual|sedut[ae]\s+individual/i;
+
+// «26/10» → data ISO, nell'anno più vicino al riferimento (la data dello stato in vigore, o oggi)
+function lpDevData(g, m, rif){
+  g = +g; m = +m;
+  if (!(g >= 1 && g <= 31 && m >= 1 && m <= 12)) return "";
+  const r = rif ? new Date(rif + "T12:00:00") : new Date();
+  let meglio = "", dist = 1e18;
+  [r.getFullYear() - 1, r.getFullYear(), r.getFullYear() + 1].forEach(y => {
+    const d = new Date(Date.UTC(y, m - 1, g, 12));
+    if (d.getUTCMonth() !== m - 1) return;
+    const diff = Math.abs(d.getTime() - r.getTime());
+    if (diff < dist){ dist = diff; meglio = d.toISOString().slice(0, 10); }
+  });
+  return meglio;
+}
+const lpDevMaiuscola = t => t.charAt(0).toUpperCase() + t.slice(1);
+const lpDevLunedi = iso => { const d = new Date(iso + "T12:00:00"); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.toISOString().slice(0, 10); };
+const lpDevMetri = t => { const x = mdSemplice(t).replace(/\s/g, ""); return /^\d[\d.]*$/.test(x) ? parseInt(x.replace(/\./g, ""), 10) : null; };
+// il primo «mercoledì 2/12» di un testo; una data senza giorno della settimana non conta (può essere uno storico)
+function lpDevPrimaData(t, rif){
+  const m = String(t).match(/\b(lun|mar|mer|gio|ven|sab|dom)[a-zìù]*\.?\s+(\d{1,2})\/(\d{1,2})\b/i);
+  return m ? lpDevData(m[2], m[3], rif) : "";
+}
+
+// le tabelle «… rispetto al gruppo»
+function lpDevTabelle(righe, fence, rif){
+  const out = [];
+  let i = 0;
+  while (i < righe.length){
+    if (fence[i] || !/^\s*\|/.test(righe[i])){ i++; continue; }
+    let j = i; while (j < righe.length && /^\s*\|/.test(righe[j])) j++;
+    const blocco = righe.slice(i, j); i = j;
+    if (blocco.length < 3) continue;
+    const testa = lpCelleMd(blocco[0]);
+    const chi = testa.length ? mdSemplice(testa[testa.length - 1]).match(/^([A-ZÀ-Ý][A-Za-zÀ-ÿ'’]{1,24}),?\s+rispetto al gruppo/i) : null;
+    if (!chi || LP_DEV_NON_NOMI.test(chi[1])) continue;
+    const col = testa.map(c => mdSemplice(c).toLowerCase());
+    const cm = col.indexOf("metri") >= 0 ? col.indexOf("metri") : col.indexOf("tot");
+    const gg = [];
+    blocco.slice(2).forEach(r => {
+      const c = lpCelleMd(r), d = mdSemplice(c[0] || "").match(/^(lun|mar|mer|gio|ven|sab|dom)[a-zìù]*\.?\s+(\d{1,2})\/(\d{1,2})/i);
+      if (!d) return;
+      const iso = lpDevData(d[2], d[3], rif); if (!iso) return;
+      const m = cm >= 0 ? lpDevMetri(c[cm]) : null, x = lpTronca(mdSemplice(c[c.length - 1] || ""), 420);
+      const come = /^\W*come il gruppo/i.test(x);
+      gg.push({i: iso, m: m, x: x, k: come ? 1 : (m ? 0 : 2)});
+    });
+    if (gg.length) out.push({n: chi[1], t: "", x: "", gg: gg, fonte: "tabella"});
+  }
+  return out;
+}
+
+// le note «deviazione individuale»: un titolo o un paragrafo con il nome di chi, e un giorno
+function lpDevNote(righe, fence, rif, avvisi){
+  const out = [];
+  let dataTitolo = "", i = 0;
+  while (i < righe.length){
+    if (fence[i]){ i++; continue; }
+    const r = righe[i];
+    const h = r.match(/^(#{1,6})\s+(.*)$/);
+    if (h){
+      const testo = mdSemplice(h[2]);
+      const d = lpDevPrimaData(testo, rif);
+      if (d) dataTitolo = d; else if (h[1].length <= 3) dataTitolo = "";
+      if (LP_DEV_TRACCIA.test(testo)){
+        const nome = (testo.match(/\bdi\s+([A-ZÀ-Ý][A-Za-zÀ-ÿ'’]{2,24})\b/) || [])[1];
+        let k = i + 1; while (k < righe.length && !righe[k].trim()) k++;
+        const corpo = k < righe.length && !/^(#|\|)/.test(righe[k]) ? mdSemplice(righe[k]) : "";
+        if (nome && !LP_DEV_NON_NOMI.test(nome)){
+          if (d) out.push({n: nome, t: lpTronca(testo.replace(/\s*\([^)]*individual[^)]*\)\s*$/i, ""), 120), x: "",
+                           gg: [{i: d, m: null, x: lpTronca(lpDevMaiuscola(corpo.replace(/^[^A-Za-z0-9«]*(decisione del coach[^:]*:)?\s*/i, "")), 420), k: 0}], fonte: "nota"});
+          else avvisi.push("Nota individuale di " + nome + " senza giorno: non la segnalo.");
+        }
+      }
+      i++; continue;
+    }
+    if (!r.trim() || /^\s*\|/.test(r)){ i++; continue; }
+    let j = i; const par = [];
+    while (j < righe.length && righe[j].trim() && !fence[j] && !/^(#{1,6}\s|\s*\|)/.test(righe[j])){ par.push(righe[j]); j++; }
+    i = Math.max(j, i + 1);
+    const blocco = par.join(" ");
+    if (!LP_DEV_TRACCIA.test(blocco)) continue;
+    const nett = mdPulisci(blocco);
+    let nome = (nett.match(/^[-*\s]*\*\*([A-ZÀ-Ý][A-Za-zÀ-ÿ'’]{2,24})\s*[—–:-]/) || [])[1]
+            || (nett.match(/\*\*([A-ZÀ-Ý][A-Za-zÀ-ÿ'’]{2,24})\s+(?:fa|nuota|esce|salta|resta|non)\b/) || [])[1];
+    if (!nome || LP_DEV_NON_NOMI.test(nome)) continue;
+    const d = lpDevPrimaData(nett, rif) || dataTitolo;
+    if (!d){ avvisi.push("Nota individuale di " + nome + " senza giorno: non la segnalo."); continue; }
+    const t = (nett.match(/^[-*\s]*\*\*([^*]{3,140}?)\*\*/) || [])[1] || "";
+    const frasi = mdSemplice(nett).split(/(?<=[.!?])\s+(?=[A-ZÀ-Ý⚠])/);
+    const sua = frasi.filter(f => /proposta/i.test(f) && !LP_DEV_TRACCIA.test(f))[0]
+             || frasi.filter(f => f.replace(/^\W+/, "").indexOf(nome + " ") === 0 && !LP_DEV_TRACCIA.test(f))[0]
+             || frasi.filter(f => f.indexOf(nome) >= 0 && !LP_DEV_TRACCIA.test(f))[0] || "";
+    const testo = sua || mdSemplice(nett).replace(/^.*?\)\.?\s+/, "");
+    const e = {n: nome, t: lpTronca(mdSemplice(t).replace(/[\s.:]+$/, ""), 120), x: "", gg: [{i: d, m: null, x: lpTronca(lpDevMaiuscola(testo.replace(/^[^A-Za-zÀ-ÿ0-9«]+/, "")), 420), k: 0}], fonte: "nota"};
+    if (/da confermare/i.test(nett)) e.c = 1;
+    out.push(e);
+  }
+  return out;
+}
+
+function lpDeviazioni(righe, fence, rif, avvisi){
+  const tab = lpDevTabelle(righe, fence, rif), note = lpDevNote(righe, fence, rif, avvisi);
+  const elenco = tab.slice();
+  note.forEach(n => {
+    const lun = lpDevLunedi(n.gg[0].i);
+    const stessa = tab.filter(t => t.n.toLowerCase() === n.n.toLowerCase() && t.gg.some(g => lpDevLunedi(g.i) === lun))[0];
+    if (stessa){ if (!stessa.t) stessa.t = n.t.replace(/^[^—–-]*[—–-]\s*/, ""); return; }                 // la tabella dice già tutto: la nota ne dà il titolo
+    const doppia = elenco.filter(t => t.n.toLowerCase() === n.n.toLowerCase() && t.gg[0].i === n.gg[0].i)[0];
+    if (!doppia) elenco.push(n);
+  });
+  elenco.sort((a, b) => a.gg[0].i.localeCompare(b.gg[0].i) || a.n.localeCompare(b.n));
+  return elenco.slice(0, 40);
+}
+
 function lpScheda(righe, nomeFile){
   const fence = lpFence(righe), avvisi = [];
   const stato = lpStato(righe, fence);
   const tabelle = lpAndature(righe, fence);
   const gruppo = lpGruppoInfo(righe, fence);
+  const dev = righe.length > 150 && (stato || tabelle.length) ? lpDeviazioni(righe, fence, stato && stato.agg ? stato.agg : "", avvisi) : undefined;
   tabelle.forEach((t, i) => { t.p = i === 0 ? 1 : 0; });          // p = 1: la vedono anche i collaboratori
   if (righe.length > 150){            // un documento intero: se mancano i pezzi lo dico
     if (!stato) avvisi.push("Non trovo il riquadro «In vigore oggi» in cima al documento: lo stato del gruppo resta com'è.");
     if (!tabelle.length) avvisi.push("Non trovo tabelle nella sezione «Andature e partenze»: le andature restano come sono.");
   }
   return {scheda: lpCompattaScheda({v: 1, fonte: nomeFile || "", agg: stato ? stato.agg : "",
-            gruppo: gruppo, stato: stato ? stato.voci : [], tabelle: tabelle}), avvisi: avvisi};
+            gruppo: gruppo, stato: stato ? stato.voci : [], tabelle: tabelle, dev: dev}), avvisi: avvisi};
 }
 
 /* ---------- chi vede cosa ----------
@@ -2186,18 +2328,23 @@ function unisciScheda(vecchia, nuova){
     });
   }
   if (nuova.gruppo.length) s.gruppo = nuova.gruppo;
+  if (Array.isArray(nuova.dev)) s.dev = nuova.dev;        // un documento intero dice quali sedute diverse ci sono, anche nessuna
   return s;
 }
-const firmaScheda = s => JSON.stringify([s.stato || [], s.tabelle || [], s.gruppo || []]);
+const firmaScheda = s => JSON.stringify([s.stato || [], s.tabelle || [], s.gruppo || [], s.dev || []]);
 
 function descriviScheda(e){
   const s = e.scheda;
-  if (!s || (!s.stato.length && !s.tabelle.length && !s.gruppo.length)) return "";
+  if (!s || (!s.stato.length && !s.tabelle.length && !s.gruppo.length && !(s.dev || []).length)) return "";
   const vecchia = schede[e.gruppo];
   const parti = [];
   if (s.stato.length) parti.push("stato in vigore" + (s.agg ? " del " + gDataIt(s.agg) : "") + " (" + s.stato.length + " voci)");
   if (s.tabelle.length) parti.push(s.tabelle.length + (s.tabelle.length === 1 ? " tabella" : " tabelle") + " di andature");
   if (s.gruppo.length) parti.push("composizione e vasca");
+  if ((s.dev || []).length){
+    const nomi = []; s.dev.forEach(x => { if (nomi.indexOf(x.n) < 0) nomi.push(x.n); });
+    parti.push("sedute diverse da scrivere (" + nomi.join(", ") + ")");
+  }
   const uguale = vecchia && firmaScheda(unisciScheda(vecchia, s)) === firmaScheda(vecchia);
   return "Scheda del gruppo: " + parti.join(", ") + ". " +
     (uguale ? "Identica a quella in uso."
@@ -4636,8 +4783,94 @@ function parteDalGruppo(){
   salvaSerie(); disegnaTutto();
 }
 
+/* ---------- il documento dice che la seduta deve essere diversa ---------- */
+// Chi ha un programma individuale lo dice il documento del gruppo (tabella «… rispetto al gruppo», nota «deviazione
+// individuale»); l'app lo segnala sul giorno e sulla settimana, e con un tocco apre la seduta di quella persona.
+// Lo vede solo il titolare: la scheda con queste note non arriva ai collaboratori.
+const chiaveNome = n => pulisciVar(n).toLowerCase();
+const GG_DEV = ["lun", "mar", "mer", "gio", "ven", "sab", "dom"];
+const giornoCorto = iso => GG_DEV[gg(iso)] + " " + new Date(iso + "T12:00:00").getDate();
+const accorcia = (t, n) => { t = String(t || ""); return t.length <= n ? t : t.slice(0, n).replace(/\s+\S*$/, "") + "…"; };
+// le sedute individuali di una settimana, una per persona: {n, t, c, gg: [{i, m, x, k}]} con i soli giorni della settimana
+function devSett(g, iso){
+  const sc = schede[g];
+  if (!sc || !Array.isArray(sc.dev) || !sc.dev.length || !vediTecniche()) return [];
+  const f = finestraSett(g, iso), per = {};
+  sc.dev.forEach(e => {
+    const dentro = (e.gg || []).filter(x => x.i >= f.i && x.i <= f.f);
+    if (!dentro.length) return;
+    const k = chiaveNome(e.n);
+    const o = per[k] = per[k] || {n: e.n, t: e.t || "", c: 0, gg: []};
+    if (!o.t && e.t) o.t = e.t;
+    if (e.c) o.c = 1;
+    dentro.forEach(x => {
+      const doppio = o.gg.find(y => y.i === x.i);
+      if (!doppio) o.gg.push(x);
+      else if (x.k === 0 && doppio.k !== 0) Object.assign(doppio, x);
+    });
+  });
+  return Object.keys(per).map(k => { per[k].gg.sort((a, b) => a.i.localeCompare(b.i)); return per[k]; })
+    .sort((a, b) => a.gg[0].i.localeCompare(b.gg[0].i) || a.n.localeCompare(b.n, "it"));
+}
+// la seduta diversa di quella persona in quella settimana, se esiste già
+const variantePer = (g, iso, nome) => variantiSett(g, iso).find(v => chiaveNome(v.nome) === chiaveNome(nome)) || null;
+const scrittaIl = (v, iso) => !!v && v.serie.some(s => s.d === iso);
+// apre la seduta di una persona in un giorno, creandola se serve
+function apriSedutaDiversa(g, iso, nome){
+  const nome1 = pulisciVar(nome);
+  if (!nome1) return;
+  if (!variantePer(g, iso, nome1)) ricordaNuova(g, iso, nome1);
+  const v = variantePer(g, iso, nome1);
+  apriGiorno(iso, v ? v.nome : nome1);
+}
+
+function disegnaDev(){
+  const box = document.getElementById("dev-avviso");
+  if (!box) return;
+  const g = pref.gruppo, iso = document.getElementById("data").value, sola = !!sync.sola;
+  box.innerHTML = "";
+  const elenco = devSett(g, iso);
+  const righe = [];
+  elenco.forEach(e => {
+    const oggi = e.gg.find(x => x.i === iso), v = variantePer(g, iso, e.n);
+    const diversi = e.gg.filter(x => x.k === 0 && x.i !== iso);
+    const altri = diversi.length ? "Anche " + diversi.map(x => giornoCorto(x.i)).join(", ") + "." : "";
+    const mia = chiaveNome(varSel) === chiaveNome(e.n);
+    const riga = el("div", "dev-riga");
+    riga.setAttribute("data-dev", e.n);
+    const testo = el("div", "dev-testo");
+    if (oggi && oggi.k === 0){
+      const scritta = scrittaIl(v, iso);
+      riga.classList.add(scritta ? "fatta" : "da-fare");
+      testo.append(el("b", "", e.n), scritta ? " · seduta diversa scritta" : " · oggi la seduta deve essere diversa" + (e.c ? " (giorno da confermare)" : ""));
+      if (oggi.x) testo.appendChild(el("small", "", accorcia(oggi.x, 230)));
+      if (altri) testo.appendChild(el("small", "", altri));
+      riga.appendChild(testo);
+      if (!mia && !sola){
+        const b = el("button", "chip piccolo" + (scritta ? "" : " var"), scritta ? "Apri la seduta di " + e.n : "Scrivi la seduta di " + e.n);
+        b.setAttribute("data-dev-apri", e.n);
+        b.onclick = () => apriSedutaDiversa(g, iso, e.n);
+        riga.appendChild(b);
+      }
+    } else if (oggi && oggi.k === 2){
+      riga.classList.add("muta");
+      testo.append(el("b", "", e.n), " · oggi non fa la seduta del gruppo");
+      if (oggi.x) testo.appendChild(el("small", "", accorcia(oggi.x, 160)));
+      riga.appendChild(testo);
+    } else if (diversi.length){
+      riga.classList.add("muta");
+      testo.append(el("b", "", e.n), " · in questa settimana la seduta è diversa: " + diversi.map(x => giornoCorto(x.i)).join(", "));
+      riga.appendChild(testo);
+    } else return;
+    righe.push(riga);
+  });
+  box.hidden = !righe.length;
+  righe.forEach(x => box.appendChild(x));
+}
+
 /* ---------- la barra sopra la seduta: Gruppo | un nome | + Seduta diversa ---------- */
 function disegnaVarianti(){
+  disegnaDev();
   const box = document.getElementById("varianti"), dest = document.getElementById("dest-var");
   if (!box || !dest) return;
   const g = pref.gruppo, iso = document.getElementById("data").value, sola = !!sync.sola;
@@ -4773,35 +5006,66 @@ function disegnaMixVar(lista, iso){
 function disegnaVariantiSett(w, g){
   const sez = document.getElementById("w-sez-var"), corpo = document.getElementById("w-var-corpo");
   if (!sez || !corpo) return;
-  const elenco = variantiSett(g, w.i).filter(v => v.serie.length);
+  const scritte = variantiSett(g, w.i).filter(v => v.serie.length), dev = devSett(g, w.i);
+  // una riga per persona: chi ha già la seduta scritta e chi il documento segnala
+  const persone = [];
+  scritte.forEach(v => persone.push({n: v.nome, v: v, e: dev.find(e => chiaveNome(e.n) === chiaveNome(v.nome)) || null}));
+  dev.forEach(e => { if (!persone.some(p => chiaveNome(p.n) === chiaveNome(e.n))) persone.push({n: e.n, v: variantePer(g, w.i, e.n), e: e}); });
+  persone.sort((a, b) => a.n.localeCompare(b.n, "it", {sensitivity: "base"}));
   corpo.innerHTML = "";
-  sez.hidden = !elenco.length;
-  elenco.forEach(v => {
+  sez.hidden = !persone.length;
+  const sola = !!sync.sola;
+  const daFare = {};                       // giorno → nomi con la seduta da scrivere
+  persone.forEach(p => {
     const blocco = el("div", "w-var");
+    blocco.setAttribute("data-persona", p.n);
     const testa = el("div", "w-var-testa");
-    testa.append(el("b", "", v.nome), el("span", "num", fmt(v.tot) + " m · " + v.giorni.length + (v.giorni.length === 1 ? " seduta" : " sedute")));
+    const scrivere = p.e ? p.e.gg.filter(x => x.k === 0 && !scrittaIl(p.v, x.i)).length : 0;
+    testa.append(el("b", "", p.n), el("span", "num",
+      p.v && p.v.serie.length ? fmt(p.v.tot) + " m · " + p.v.giorni.length + (p.v.giorni.length === 1 ? " seduta" : " sedute") + (scrivere ? " · " + scrivere + " da scrivere" : "")
+                              : scrivere + (scrivere === 1 ? " seduta da scrivere" : " sedute da scrivere")));
+    blocco.appendChild(testa);
+    if (p.e && p.e.t) blocco.appendChild(el("p", "w-var-nota", accorcia(p.e.t.charAt(0).toUpperCase() + p.e.t.slice(1), 140) + (p.e.c ? " · giorno da confermare" : "")));
     const giorni = el("div", "chips w-var-giorni");
-    v.giorni.forEach(iso => {
-      const b = el("button", "chip piccolo", GIORNI[gg(iso)] + " " + new Date(iso + "T12:00:00").getDate() + " · " +
-        fmt(totale(v.serie.filter(s => s.d === iso))));
-      b.title = "Apri la seduta di " + v.nome + " del " + dataLunga(iso);
-      b.onclick = () => apriGiorno(iso, v.nome);
-      giorni.appendChild(b);
+    const iso = [];
+    if (p.v) p.v.giorni.forEach(d => { if (iso.indexOf(d) < 0) iso.push(d); });
+    if (p.e) p.e.gg.forEach(x => { if (iso.indexOf(x.i) < 0) iso.push(x.i); });
+    iso.sort().forEach(d => {
+      const mio = p.v ? p.v.serie.filter(s => s.d === d) : [], x = p.e ? p.e.gg.find(y => y.i === d) : null;
+      const etichetta = giornoCorto(d);
+      if (mio.length){
+        const b = el("button", "chip piccolo", etichetta + " · " + fmt(totale(mio)));
+        b.title = "Apri la seduta di " + p.n + " del " + dataLunga(d);
+        b.onclick = () => apriGiorno(d, p.v.nome);
+        giorni.appendChild(b);
+      } else if (x && x.k === 0){
+        (daFare[d] = daFare[d] || []).push(p.n);
+        const b = el("button", "chip piccolo da-fare", etichetta + " · da scrivere");
+        b.setAttribute("data-da-scrivere", p.n);
+        b.title = accorcia(x.x || "", 200) || "Il documento segnala una seduta diversa";
+        if (sola) b.disabled = true; else b.onclick = () => apriSedutaDiversa(g, d, p.n);
+        giorni.appendChild(b);
+      } else if (x){
+        const m = el("span", "chip piccolo muto", etichetta + (x.k === 1 ? " · come il gruppo" : " · non si allena"));
+        if (x.x) m.title = accorcia(x.x, 200);
+        giorni.appendChild(m);
+      }
     });
-    blocco.append(testa, giorni); corpo.appendChild(blocco);
+    blocco.appendChild(giorni); corpo.appendChild(blocco);
   });
-  // un puntino sui giorni della griglia che hanno una seduta diversa
+  // un puntino sui giorni della griglia: pieno se c'è una seduta diversa scritta, vuoto se è da scrivere
   const celle = document.getElementById("w-giorni").children;
   let k = 0;
   for (let x = new Date(w.i + "T12:00:00"); x <= new Date(w.f + "T12:00:00"); x.setDate(x.getDate() + 1), k++){
-    const iso = isoDi(x), chi = elenco.filter(v => v.giorni.indexOf(iso) >= 0).map(v => v.nome);
-    if (celle[k] && chi.length){
-      const p = el("i", "var-punto"); p.title = "Seduta diversa: " + chi.join(", ");
+    const iso = isoDi(x), chi = scritte.filter(v => v.giorni.indexOf(iso) >= 0).map(v => v.nome), da = daFare[iso] || [];
+    if (celle[k] && (chi.length || da.length)){
+      const p = el("i", "var-punto" + (chi.length ? "" : " da-fare"));
+      p.title = (chi.length ? "Seduta diversa: " + chi.join(", ") : "") + (chi.length && da.length ? " · " : "") +
+                (da.length ? "Da scrivere: " + da.join(", ") : "");
       celle[k].appendChild(p);
     }
   }
 }
-
 /* ============ navigazione e avvio ============ */
 function disegnaTutto(){
   disegnaGruppi();
