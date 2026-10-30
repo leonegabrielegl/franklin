@@ -4834,7 +4834,6 @@ function disegnaDev(){
   elenco.forEach(e => {
     const oggi = e.gg.find(x => x.i === iso), v = variantePer(g, iso, e.n);
     const diversi = e.gg.filter(x => x.k === 0 && x.i !== iso);
-    const altri = diversi.length ? "Anche " + diversi.map(x => giornoCorto(x.i)).join(", ") + "." : "";
     const mia = chiaveNome(varSel) === chiaveNome(e.n);
     const riga = el("div", "dev-riga");
     riga.setAttribute("data-dev", e.n);
@@ -4843,8 +4842,6 @@ function disegnaDev(){
       const scritta = scrittaIl(v, iso);
       riga.classList.add(scritta ? "fatta" : "da-fare");
       testo.append(el("b", "", e.n), scritta ? " · seduta diversa scritta" : " · oggi la seduta deve essere diversa" + (e.c ? " (giorno da confermare)" : ""));
-      if (oggi.x) testo.appendChild(el("small", "", accorcia(oggi.x, 230)));
-      if (altri) testo.appendChild(el("small", "", altri));
       riga.appendChild(testo);
       if (!mia && !sola){
         const b = el("button", "chip piccolo" + (scritta ? "" : " var"), scritta ? "Apri la seduta di " + e.n : "Scrivi la seduta di " + e.n);
@@ -4855,7 +4852,6 @@ function disegnaDev(){
     } else if (oggi && oggi.k === 2){
       riga.classList.add("muta");
       testo.append(el("b", "", e.n), " · oggi non fa la seduta del gruppo");
-      if (oggi.x) testo.appendChild(el("small", "", accorcia(oggi.x, 160)));
       riga.appendChild(testo);
     } else if (diversi.length){
       riga.classList.add("muta");
@@ -5025,7 +5021,7 @@ function disegnaVariantiSett(w, g){
       p.v && p.v.serie.length ? fmt(p.v.tot) + " m · " + p.v.giorni.length + (p.v.giorni.length === 1 ? " seduta" : " sedute") + (scrivere ? " · " + scrivere + " da scrivere" : "")
                               : scrivere + (scrivere === 1 ? " seduta da scrivere" : " sedute da scrivere")));
     blocco.appendChild(testa);
-    if (p.e && p.e.t) blocco.appendChild(el("p", "w-var-nota", accorcia(p.e.t.charAt(0).toUpperCase() + p.e.t.slice(1), 140) + (p.e.c ? " · giorno da confermare" : "")));
+    if (p.e && p.e.c) blocco.appendChild(el("p", "w-var-nota", "Giorno da confermare"));
     const giorni = el("div", "chips w-var-giorni");
     const iso = [];
     if (p.v) p.v.giorni.forEach(d => { if (iso.indexOf(d) < 0) iso.push(d); });
