@@ -2838,7 +2838,7 @@ function applicaRuolo(){
 /* ============ foglio Google ============ */
 function statoSync(msg){
   const el = document.getElementById("d-sync");
-  if (msg){ el.textContent = msg; return; }
+  if (msg){ el.textContent = msg + (sync.url && /serie (allineate|scaricate)/.test(msg) ? " · poi ogni 3 minuti" : ""); return; }
   el.textContent = !sync.url
     ? "Non collegato. Incolla qui sotto l'indirizzo dell'app web e la parola d'ordine dello script."
     : (sync.ultimo
@@ -2846,6 +2846,7 @@ function statoSync(msg){
             : sync.sola ? "Solo consultazione. Ultimo aggiornamento: " : "Ultima sincronizzazione: ") +
           new Date(sync.ultimo).toLocaleString("it-IT")
         : "Collegato, mai sincronizzato.");
+  if (sync.url) el.textContent += " Si aggiorna da sola ogni 3 minuti.";
 }
 
 // piano e giornate arrivati dal foglio, più recenti dei miei: li prendo.
@@ -2867,9 +2868,12 @@ function adottaConfig(c){
   salvaPref(); salvaPiano(); salvaGiorni(); salvaSchede(); ricostruisciModelli();
 }
 
-async function sincronizza(silenzioso){
+async function sincronizza(silenzioso, auto){
   if (!sync.url){ if(!silenzioso) statoSync("Manca l'indirizzo dell'app web."); return; }
-  statoSync("Sincronizzo…");
+  if (syncInCorso){ if (!auto) statoSync("Sincronizzo…"); return; }      // una alla volta
+  syncInCorso = true;
+  const foto = fotoLocale();
+  if (!auto) statoSync("Sincronizzo…");
   try {
     const r = await fetch(sync.url, {
       method: "POST", redirect: "follow",
@@ -2885,19 +2889,27 @@ async function sincronizza(silenzioso){
     // la parola d'ordine dei collaboratori è solo lettura; uno script vecchio non risponde col ruolo: ce n'è una sola, la tua
     sync.ruolo = d.ruolo === "collab" ? "collab" : "titolare";
     if (sync.ruolo === "collab") sync.sola = true;
-    serie = d.serie || [];
-    eliminati = d.eliminati || [];
+    const prima = improntaDati();
+    const unite = unisciDopoVolo(foto, d.serie || [], d.eliminati || []);    // quello che ho fatto mentre il foglio rispondeva resta
+    serie = unite.serie;
+    eliminati = unite.eliminati;
     if (d.config && (d.config.ts || 0) > (pref.pianoTs || 0)) adottaConfig(d.config);
     // un dispositivo dei collaboratori non tiene le note del titolare, nemmeno se le aveva da prima
     if (sync.ruolo === "collab"){ schede = soloPubbliche(schede); salvaSchede(); }
     sync.ultimo = new Date().toISOString();
-    salvaSerie(); salvaCest(); salvaSync(); applicaRuolo(); disegnaTutto();
+    syncUltimo = Date.now();
+    salvaSerie(); salvaCest(); salvaSync();
+    if (!auto || improntaDati() !== prima) ridisegnaSync(auto);          // in automatico si ridisegna solo se qualcosa è cambiato
     statoSync((sync.ruolo === "collab" ? "Accesso collaboratore · " : "") +
               serie.length + (sync.sola ? " serie scaricate dal foglio · " : " serie allineate col foglio · ") +
               new Date(sync.ultimo).toLocaleString("it-IT"));
   } catch(err){
-    statoSync("Non ha funzionato: " + err.message +
-      ". Controlla indirizzo e parola d'ordine, e che l'app web sia distribuita per chiunque abbia il link.");
+    statoSync(auto
+      ? "Sincronizzazione automatica non riuscita (" + err.message + "). Riprovo fra 3 minuti."
+      : "Non ha funzionato: " + err.message +
+        ". Controlla indirizzo e parola d'ordine, e che l'app web sia distribuita per chiunque abbia il link.");
+  } finally {
+    syncInCorso = false;
   }
 }
 
@@ -3365,6 +3377,70 @@ function disegnaStagione(){
   const energetici = fattoTot - (z.tec || 0);
   if (energetici > 0) leg.insertAdjacentHTML("beforeend", '<span style="width:100%">En-1 sui soli metri energetici, senza TEC: <b>' +
     (z.en1 / energetici * 100).toFixed(1).replace(".", ",") + '%</b></span>');
+}
+
+/* ============ sincronizzazione automatica ============
+   Con il foglio collegato l'app si allinea da sola ogni 3 minuti, e quando si torna sulla pagina dopo un po'.
+   Non parte se la pagina è in secondo piano o il telefono è offline. Se stai scrivendo in un campo la pagina non viene
+   ridisegnata finché non finisci, e quello che scrivi o cancelli mentre il foglio risponde non si perde. */
+const SYNC_OGNI = 3 * 60 * 1000;
+let syncInCorso = false, syncUltimo = 0, syncDaDisegnare = false, syncTimer = null;
+
+// c'è un cursore in un campo di testo? Ridisegnare ora lo farebbe sparire
+function staScrivendo(){
+  const a = document.activeElement;
+  if (!a || a === document.body) return false;
+  if (a.tagName === "TEXTAREA") return true;
+  if (a.tagName === "INPUT") return !/^(date|checkbox|radio|button|submit|file|range|color)$/i.test(a.type);
+  return a.isContentEditable === true;
+}
+
+// com'erano le serie quando ho mandato la richiesta
+function fotoLocale(){
+  return {ts: new Map(serie.map(s => [s.id, s.ts || 0])), el: new Set(eliminati.map(e => e.id))};
+}
+// la risposta del foglio non conosce quello che ho fatto nel frattempo: lo rimetto sopra
+function unisciDopoVolo(foto, nuoveSerie, nuoveElim){
+  const resp = new Map(nuoveSerie.map(s => [s.id, s])), tomb = new Map(nuoveElim.map(e => [e.id, e]));
+  serie.forEach(s => {
+    const prima = foto.ts.get(s.id);
+    if (prima === undefined || (s.ts || 0) > prima){            // nuova o modificata mentre aspettavo
+      const r = resp.get(s.id);
+      if (!r || (s.ts || 0) >= (r.ts || 0)) resp.set(s.id, s);
+    }
+  });
+  eliminati.forEach(e => { if (!foto.el.has(e.id)){ tomb.set(e.id, e); resp.delete(e.id); } });   // tolta mentre aspettavo
+  return {serie: Array.from(resp.values()), eliminati: Array.from(tomb.values())};
+}
+// un'impronta di quello che si vede: se non cambia, non c'è niente da ridisegnare
+function improntaDati(){
+  return JSON.stringify([serie.map(s => [s.id, s.ts || 0, s.g, s.d]).sort(), eliminati.length, pref.pianoTs || 0, !!sync.sola, sync.ruolo || ""]);
+}
+
+function ridisegnaSync(auto){
+  if (auto && staScrivendo()){ syncDaDisegnare = true; return; }
+  syncDaDisegnare = false;
+  applicaRuolo(); disegnaTutto();
+}
+
+async function sincronizzaAuto(){
+  if (!sync.url || syncInCorso || document.hidden || navigator.onLine === false) return;
+  syncUltimo = Date.now();
+  await sincronizza(true, true);
+}
+
+function avviaSyncAuto(){
+  if (syncTimer) return;
+  syncTimer = setInterval(sincronizzaAuto, SYNC_OGNI);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && Date.now() - syncUltimo >= SYNC_OGNI) sincronizzaAuto();
+  });
+  window.addEventListener("online", () => { if (Date.now() - syncUltimo >= 30000) sincronizzaAuto(); });
+  // finito di scrivere: se nel frattempo sono arrivati dati nuovi, ora si vedono
+  document.addEventListener("focusout", () => {
+    if (!syncDaDisegnare) return;
+    setTimeout(() => { if (syncDaDisegnare && !staScrivendo()) ridisegnaSync(false); }, 300);
+  });
 }
 
 /* ============ gruppo: traguardi, appuntamenti, fasi, stato in vigore e andature ============ */
@@ -5214,6 +5290,7 @@ if (!Memoria.disponibile) mostraAvviso();
 ricostruisciModelli();
 disegnaGruppi(); disegnaForm(); anteprima(); anteprimaTesto(); disegnaTutto(); applicaRuolo();
 if (sync.url) sincronizza(true);
+avviaSyncAuto();
 if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0)
   navigator.serviceWorker.register("sw.js").catch(() => {});
 </script>
