@@ -544,6 +544,12 @@ details.incolla textarea{margin-top:8px}
 .w-var-nota{margin:-2px 0 8px; font-size:13px; color:var(--nebbia)}
 .giorno .var-punto.da-fare{background:transparent; box-shadow:inset 0 0 0 1.5px var(--sabbia)}
 @media (max-width:520px){ .dev-riga{flex-direction:column; gap:8px} }
+
+/* modo Testo: una riga compatta dei documenti */
+.compatta{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:12px; padding:9px 12px;
+  border:1px dashed var(--rame); border-radius:var(--r-m); background:rgba(192,116,80,.10); font-size:14px; line-height:1.45; color:var(--piastrella)}
+.compatta .chip{flex:none}
+@media (max-width:520px){ .compatta{flex-direction:column; align-items:flex-start} }
 /* ============ navigazione ============ */
 nav{position:fixed; left:0; right:0; bottom:0; z-index:30; display:flex; justify-content:center;
   background:rgba(13,19,19,.94); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
@@ -667,10 +673,16 @@ def 1x200 mx en1 // social"></textarea>
             <div class="azioni">
               <button class="primario" id="aggiungi-testo" disabled>Aggiungi le serie</button>
             </div>
+            <div class="compatta" id="prevt-compatta" hidden>
+              <span>Riga del documento scomposta in serie: controllale qui sotto, o riscrivile una per riga per correggerle.</span>
+              <button class="chip piccolo" id="testo-espandi">Riscrivi in righe</button>
+            </div>
             <ul class="serie lettura-testo" id="prevt-elenco" hidden></ul>
             <p class="nota">Prima la struttura: blocco, ripetizioni×distanza, stile, zona, attrezzi e partenza (<code>p2:36</code>).
               Tutto quello che scrivi dopo <code>//</code> è la nota e resta identico, virgole e numeri compresi.
               Senza <code>//</code> la nota comincia dalla prima parola che non riconosco.
+              Puoi incollare anche una riga dei documenti (<code>WU800+TEC600(…)+pre200+Sp-3 4×(4×25) part.1'30" = 400 Sp + 300 En-1+…</code>)
+              o una riga della loro tabella: la scompongo in serie.
               Una riga senza misura si aggiunge alla nota della serie sopra.</p>
             <p class="nota">Giri: <code>2x(5x100 sl en2 p1:30)</code> oppure <code>2x5x100 sl en2</code>.
               Puoi incollare anche righe copiate da Excel o Fogli: ogni colonna viene letta per quello che contiene
@@ -1387,8 +1399,10 @@ function righeDiTesto(testo){
 function analizzaTesto(testo){
   const righe = [], lette = [];
   let ultima = null;
-  righeDiTesto(testo).forEach(rec => {
+  espandiCompatte(righeDiTesto(testo)).forEach(rec => {
     const e = rec.celle ? leggiCelle(rec.celle) : leggiRigaEsito(rec.testo);
+    if (rec.compatta && !e.serie){ righe.push({nonLetta: String(rec.testo || "").trim()}); return; }   // un pezzo senza metri non va nella nota di un'altra serie
+    if (e.serie && rec.avvisi && rec.avvisi.length) e.avvisi = (e.avvisi || []).concat(rec.avvisi);
     if (e.vuota || e.ignora) return;
     if (e.serie){
       lette.push(e.serie);
@@ -1617,6 +1631,7 @@ function anteprimaTesto(){
     ul.appendChild(li);
   });
   ul.hidden = !esito.righe.length;
+  disegnaCompatta();
 }
 
 /* ============ durata stimata ============
@@ -3443,6 +3458,321 @@ function avviaSyncAuto(){
   });
 }
 
+/* ============ righe compatte dei documenti ============
+   Nei documenti una seduta sta su una riga: «WU800+TEC600(drill …)+pre200+Sp-3 4×(4×25 …) part.1'30" … = 400 Sp + 300 En-1
+   (nota)+…+compl.400+defat300». Qui la riga si scompone nelle righe normali («wu 8x100 sl en1», «main 4x4x25 sl sp p1:30 // …»),
+   che poi legge il lettore di sempre: così l'anteprima, i totali e le note sono quelli di una seduta scritta a mano.
+   - WU, TEC, pre, compl., defat con i metri: un blocco in En-1 (TEC in tecnica) a ripetute di 100 (WU) o 50 (TEC, pre,
+     compl.), il defaticamento tutto d'un pezzo; se tra parentesi c'è la scomposizione (6×100 part.2'30"), vale quella.
+   - Una serie: zona (Sp-3, En-2, …), ripetute (8×25, 4×(4×25 …), 4×broken 100), stile, part. → partenza.
+     «3×200 part. 5'15" + 1×250 part. 6'30"» sono due serie della stessa zona.
+   - I conti dopo «=» (400 Sp + 300 En-1): la parte che non è la serie è il nuotato nei recuperi, una riga a sé.
+   - Il testo che resta, le parentesi e la nota finale vanno nella nota della serie.
+   - Dalla tabella dei documenti («| Mar 3/11 | 5.300 | 3.700 | … |») i metri e le zone della riga fanno da controllo. */
+const RC_NUM = "(\\d{1,3}(?:\\.\\d{3})+|\\d+)";
+const rcNum = s => parseInt(String(s).replace(/\./g, ""), 10) || 0;
+const RC_BREVI = [
+  {re: /^(wu|risc(?:aldamento)?|warm-?up)$/i, b: "wu", z: "en1", u: 100},
+  {re: /^(tec|tecnica)$/i, b: "tec", z: "tec", u: 50},
+  {re: /^(pre|pre-?serie)$/i, b: "pre", z: "en1", u: 50},
+  {re: /^(compl?|complemento)$/i, b: "comp", z: "en1", u: 50},
+  {re: /^(defat|def|defaticamento)$/i, b: "def", z: "en1", u: 0}
+];
+const RC_ZONA = t => {
+  const k = String(t || "").toLowerCase().replace(/\s+/g, "");
+  if (/^sp/.test(k)) return "sp";
+  if (/^tec/.test(k)) return "tec";
+  const m = k.match(/^en-?([123])/);
+  return m ? "en" + m[1] : "";
+};
+const RC_STILE = {sl: "sl", do: "do", ra: "ra", fa: "fa", df: "fa", mx: "mx", im: "mx", misti: "mx"};
+const RC_ATTREZZI = ["pinne", "pull", "palette", "snorkel", "paracadute", "tavola", "elastico", "gambe"];
+const RC_RIP = new RegExp(RC_NUM + "\\s*[x×]\\s*(\\(|broken|\\d)", "i");
+
+// il testo come lo scrivono i documenti, senza grassetti e con apici e segni uniformi
+function rcPulisci(t){
+  return String(t == null ? "" : t).replace(/ /g, " ").replace(/\*\*|\*|`/g, "")
+    .replace(/[’‘´]/g, "'").replace(/[”“″]/g, '"').replace(/\s+/g, " ").trim();
+}
+// divide al «+» fuori dalle parentesi, quando quello che segue verifica «apre»
+function rcDividi(t, apre){
+  const parti = [];
+  let prof = 0, inizio = 0;
+  for (let i = 0; i < t.length; i++){
+    const c = t[i];
+    if (c === "(") prof++;
+    else if (c === ")") prof = Math.max(0, prof - 1);
+    else if (c === "+" && !prof && apre(t.slice(i + 1))){ parti.push(t.slice(inizio, i)); inizio = i + 1; }
+  }
+  parti.push(t.slice(inizio));
+  return parti.map(x => x.trim()).filter(Boolean);
+}
+// le parti di una riga: un «+» apre una parte nuova solo se dopo comincia una parola con dei metri
+// («+TEST 200 SL max», «+partenze 8×25»); «+ 300 En-1» dei conti e «100 sciolto + 1' fermo» restano dove sono
+const rcParti = t => rcDividi(t, resto => {
+  const r = resto.replace(/^\s+/, "");
+  if (!/^[A-Za-zÀ-ÿ]/.test(r)) return false;
+  if (/^(Sp|En|TEC)(?:-?[123])?\s+\d/i.test(r)) return true;                    // «En-3 2×(9×100)», «Sp-1 3×200»
+  const fino = r.split(/[+=]/)[0];
+  return RC_RIP.test(fino) ||
+    /(^|[\s.A-Za-z])\d{2,}/.test(fino.replace(/\([^)]*\)/g, " ").replace(/\d+\s*m\s+(massimal|veloc)/gi, " "));
+});
+// «part.1'30"», «part. 4'10"/4'35"/4'30"» (la prima è la partenza, le altre restano nella nota), «part. 50"»
+function rcPartenza(t){
+  const T = "(?:\\d{1,2}'\\s*\\d{0,2}\"?|\\d{1,2}\")";
+  const m = String(t).match(new RegExp("part\\.?\\s*(" + T + ")((?:\\s*/\\s*" + T + ")*)", "i"));
+  if (!m) return {p: "", via: "", altre: ""};
+  const q = m[1].match(/^(\d{1,2})'\s*(\d{0,2})|^(\d{1,2})"/);
+  const p = q[3] ? "0:" + q[3].padStart(2, "0") : (+q[1]) + ":" + String(q[2] || "0").padStart(2, "0");
+  return {p: p, via: m[0], altre: m[2] ? "partenze " + (m[1] + m[2]).replace(/\s+/g, "") : ""};
+}
+const rcRipulisci = t => String(t || "").replace(/\(\s*\)/g, "").replace(/\s+([,;.)])/g, "$1").replace(/\(\s+/g, "(")
+  .replace(/^[\s,;.:–—+-]+|[\s,;:–—+-]+$/g, "").replace(/(,\s*)+,/g, ",").replace(/\s+/g, " ").trim();
+// lo stile scritto come codice (SL, DO, …, IM) o «misti»; «drill misto» o «entry dorso» descrivono un esercizio
+function rcStile(t){
+  const m = String(t).match(/\b(SL|DO|RA|FA|MX|IM|DF|misti)\b/);
+  return m ? {s: RC_STILE[m[1].toLowerCase()], via: m[1]} : {s: "", via: ""};
+}
+function rcAttrezzi(t){
+  const k = String(t).toLowerCase(), out = [];
+  RC_ATTREZZI.forEach(a => {
+    const m = k.match(new RegExp("(^|[^a-zà-ÿ])((senza|niente|no)\\s+)?" + a + "(?![a-zà-ÿ])"));
+    if (m && !m[2]) out.push(a);
+  });
+  return out;
+}
+// una parola che dice la zona quando il documento non la scrive (nei documenti il LIT si conta in En-2)
+function rcZonaDaParole(t){
+  if (/\b(USRPT|ritmo gara|passo gara)\b/i.test(t)) return "sp";
+  if (/\bLIT\b/.test(t)) return "en2";
+  return "";
+}
+// un test massimale senza zona: 100 o meno in Sp, oltre in En-3 (i documenti non sono d'accordo sul 200: c'è l'avviso)
+const rcZonaTest = (t, m) => /\b(test|max|massimal)/i.test(t) ? (m <= 100 ? "sp" : "en3") : "";
+const rcRiga = o => [o.b, (o.gi > 1 ? o.gi + "x" : "") + o.r + "x" + o.m, o.s || "sl", o.z]
+  .concat(o.a || []).concat(o.p ? ["p" + o.p] : []).join(" ") + (o.n ? " // " + o.n : "");
+const rcMetri = o => o.gi * o.r * o.m;
+
+// le parentesi in fondo alla parte (una nota per un atleta, una variante): fuori dalla struttura
+function rcCoda(t){
+  let s = t.trim();
+  const coda = [];
+  while (/\)\s*$/.test(s)){
+    let prof = 0, i = s.length - 1;
+    for (; i >= 0; i--){ if (s[i] === ")") prof++; else if (s[i] === "(" && !--prof) break; }
+    if (i <= 0) break;
+    const dentro = s.slice(i + 1, s.lastIndexOf(")")).trim(), prima = s.slice(0, i);
+    // le parentesi di una ripetuta («4×(4×25 …)») e di un blocco («TEC600(…)») non sono una coda
+    if (/[x×]\s*$/i.test(prima) || /^\s*[A-Za-z]+\.?\s*[\d.]+\s*$/.test(prima)) break;
+    coda.unshift(dentro); s = prima.trim();
+  }
+  return {resto: s, coda: coda.filter(Boolean)};
+}
+
+// un blocco scritto corto: «WU800», «TEC600(drill …)», «compl.400», «defat300», «WU900 (700 SL facile + 4×50 progressivo)»
+function rcBreve(parte){
+  const m = parte.match(new RegExp("^([A-Za-zÀ-ÿ-]+)\\.?[\\s-]*" + RC_NUM + "\\s*(?:m\\b)?\\s*(.*)$", "i"));
+  if (!m) return null;
+  const tipo = RC_BREVI.find(x => x.re.test(m[1]));
+  if (!tipo) return null;
+  const tot = rcNum(m[2]);
+  let resto = m[3].trim(), dentro = "";
+  const par = resto.match(/^\((.*)\)\s*(.*)$/);
+  if (par){ dentro = par[1].trim(); resto = par[2].trim(); }
+  const st = rcStile(dentro + " " + resto), a = rcAttrezzi(dentro + " " + resto);
+  // i pezzi tra parentesi: «sculling 6×100 part.2'30"», «dog paddle 3×100+stroke count 3×100», «700 SL facile + 4×50»
+  const pezzi = [], descr = [];
+  if (dentro) rcDividi(dentro, () => true).forEach(x => {
+    const q = x.match(new RegExp(RC_NUM + "\\s*[x×]\\s*" + RC_NUM));
+    const solo = !q && x.match(new RegExp("(^|\\s)" + RC_NUM + "(?:\\s?m)?(?=\\s|$)"));
+    const part = rcPartenza(x);
+    if (q) pezzi.push({r: rcNum(q[1]), m: rcNum(q[2]), p: part.p, testo: x.replace(q[0], " ").replace(part.via, " ")});
+    else if (solo && rcNum(solo[2]) >= 25) pezzi.push({r: 1, m: rcNum(solo[2]), p: part.p, testo: x.replace(solo[0], " ").replace(part.via, " ")});
+    else descr.push(x);
+  });
+  const pulisci = x => rcRipulisci(st.via ? x.replace(new RegExp("\\b" + st.via + "\\b"), " ") : x);
+  const righe = [];
+  const somma = pezzi.reduce((x, y) => x + y.r * y.m, 0);
+  if (pezzi.length > 1 && somma === tot){
+    pezzi.forEach((x, i) => righe.push({b: tipo.b, gi: 1, r: x.r, m: x.m, s: rcStile(x.testo).s || st.s || "sl", z: tipo.z, a: a, p: x.p,
+      n: pulisci([i ? "" : descr.join(" + "), x.testo, i ? "" : resto].filter(Boolean).join(", "))}));
+  } else if (pezzi.length === 1 && somma === tot){
+    const x = pezzi[0];
+    righe.push({b: tipo.b, gi: 1, r: x.r, m: x.m, s: st.s || "sl", z: tipo.z, a: a, p: x.p,
+      n: pulisci([descr.join(" + "), x.testo, resto].filter(Boolean).join(", "))});
+  } else {
+    const u = tipo.u && tot > tipo.u && tot % tipo.u === 0 ? tipo.u : tot;
+    righe.push({b: tipo.b, gi: 1, r: tot / u, m: u, s: st.s || "sl", z: tipo.z, a: a, p: "", n: pulisci([dentro, resto].filter(Boolean).join(", "))});
+  }
+  return {righe: righe, metri: tot, avvisi: []};
+}
+
+// le ripetute di un pezzo di serie: «4×(4×25 con 15 m massimali)», «4×broken 100», «8×250», o una misura sola
+function rcRipetute(t){
+  let q = t.match(new RegExp(RC_NUM + "\\s*[x×]\\s*\\(\\s*" + RC_NUM + "\\s*[x×]\\s*" + RC_NUM + "\\s*(?:m\\b)?([^)]*)\\)", "i"));
+  if (q) return {gi: rcNum(q[1]), r: rcNum(q[2]), m: rcNum(q[3]), dentro: q[4], via: q};
+  // un broken 100 è una ripetuta da 100 spezzata: la partenza vale per i 100, e così il tempo della seduta torna
+  q = t.match(new RegExp(RC_NUM + "\\s*[x×]\\s*broken\\s*" + RC_NUM, "i"));
+  if (q) return {gi: 1, r: rcNum(q[1]), m: rcNum(q[2]), dentro: "broken " + rcNum(q[2]), via: q};
+  q = t.match(new RegExp(RC_NUM + "\\s*[x×]\\s*\\(?\\s*" + RC_NUM + "(?:\\s*m\\b)?\\)?", "i"));
+  if (q) return {gi: 1, r: rcNum(q[1]), m: rcNum(q[2]), dentro: "", via: q};
+  q = t.match(new RegExp("(^|[\\s.])" + RC_NUM + "(?:\\s?m)?(?=[\\s,;]|$)"));
+  if (q && rcNum(q[2]) >= 25) return {gi: 1, r: 1, m: rcNum(q[2]), dentro: "", via: {index: q.index + q[1].length, 0: q[0].slice(q[1].length)}};
+  return null;
+}
+
+// una serie: «Sp-3 4×(4×25 con 15 m massimali) part.1'30" recupero fermo, 3' tra le serie con 100 sciolto + 1' fermo = 400 Sp + 300 En-1 (nota)»
+function rcSerie(parte){
+  const c = rcCoda(parte);
+  let t = c.resto;
+  // i conti: dopo il primo «=» fuori dalle parentesi
+  const conti = [];
+  let prof = 0, uguale = -1;
+  for (let i = 0; i < t.length; i++){ if (t[i] === "(") prof++; else if (t[i] === ")") prof--; else if (t[i] === "=" && !prof){ uguale = i; break; } }
+  if (uguale >= 0){
+    t.slice(uguale + 1).split("+").forEach(x => {
+      const q = x.trim().match(new RegExp("^" + RC_NUM + "\\s*(?:m\\b)?\\s*(En-?[123]|TEC|Sp(?:-?\\d)?)?\\s*(.*)$", "i"));
+      if (q) conti.push({m: rcNum(q[1]), z: q[2] ? RC_ZONA(q[2]) : "", n: rcRipulisci(q[3])});
+    });
+    t = t.slice(0, uguale);
+  }
+  // la zona in testa
+  let z = "";
+  const etichetta = t.match(/^\s*(Sp|En|TEC)(?:[-\s]?([123]))?(?=[\s(]|$)/i);
+  if (etichetta){ z = RC_ZONA(etichetta[0]); t = t.slice(etichetta[0].length); }
+  // «3×200 part. 5'15" + 1×250 part. 6'30"»: più pezzi della stessa serie
+  const pezzi = rcDividi(t, r => new RegExp("^\\s*" + RC_NUM + "\\s*[x×]", "i").test(r));
+  const serie = [];
+  let testoTutto = "";
+  pezzi.forEach(x => {
+    const rip = rcRipetute(x);
+    if (!rip){ if (serie.length) serie[serie.length - 1].extra.push(x); return; }
+    const prima = x.slice(0, rip.via.index), dopo = x.slice(rip.via.index + rip.via[0].length);
+    const part = rcPartenza(dopo);
+    const resto = part.via ? dopo.replace(part.via, " ") : dopo;
+    testoTutto += " " + prima + " " + rip.dentro + " " + resto;
+    serie.push({gi: rip.gi, r: rip.r, m: rip.m, p: part.p, parti: [prima, rip.dentro, resto, part.altre], extra: []});
+  });
+  if (!serie.length) return null;
+  const tot = serie.reduce((x, y) => x + rcMetri(y), 0), avvisi = [];
+  // la zona della serie: quella in testa, o quella dei conti che fa i suoi metri (meglio se non è En-1), o una parola
+  let principale = null, senzaZona = false;
+  if (z) principale = conti.find(x => x.z === z) || conti.find(x => !x.z && x.m === tot) || null;
+  else {
+    const giuste = conti.filter(x => x.z && x.m === tot);
+    principale = giuste.find(x => x.z !== "en1") || giuste[0] || conti.find(x => !x.z && x.m === tot) || conti.find(x => x.z) || null;
+    z = (principale && principale.z) || rcZonaDaParole(testoTutto) || "";
+    if (!z){ z = rcZonaTest(testoTutto, tot) || "en1"; senzaZona = true; }
+  }
+  if (principale && principale.m !== tot)
+    avvisi.push("il documento conta " + fmt(principale.m) + " m di " + nomeZona(z) + ", la serie ne fa " + fmt(tot));
+  const st = rcStile(testoTutto), stile = st.s || "sl";
+  const togliStile = x => st.via ? String(x).replace(new RegExp("\\b" + st.via + "\\b"), " ") : x;
+  const notaDi = (x, i) => {
+    const [prima, dentro, resto, altre] = x.parti.map(y => rcRipulisci(togliStile(y)));
+    let n = dentro ? [prima, dentro].filter(Boolean).join(", ") + (resto ? (/^[,;]/.test(resto) ? "" : ", ") + resto : "")
+                   : [prima, resto].filter(Boolean).join(" ");
+    return rcRipulisci([n, altre].concat(x.extra.map(y => rcRipulisci(togliStile(y)))).concat(i === serie.length - 1 ? c.coda : []).filter(Boolean).join(", "));
+  };
+  const righe = serie.map((x, i) => ({b: "main", gi: x.gi, r: x.r, m: x.m, s: stile, z: z, a: rcAttrezzi(x.parti.join(" ")), p: x.p, n: notaDi(x, i)}));
+  if (senzaZona && /\b(test|max|massimal)/i.test(testoTutto))
+    avvisi.push("il documento non scrive la zona di questa serie: l'ho messa in " + nomeZona(z) + ", correggila se serve");
+  // il resto dei conti è nuotato nei recuperi: quante volte e quanto, dal testo («100 sciolto», «3' tra le serie»)
+  let metri = tot;
+  const s0 = serie[0];
+  conti.filter(x => x !== principale && x.m > 0).forEach(x => {
+    const d = (testoTutto.match(/(\d+)\s*(?:m\s*)?(?:sciolt|facil|easy|lent)/i) || [])[1];
+    let k, dd;
+    if (!x.z && x.n){ k = 1; dd = x.m; }                                 // «+250 sciolto subito dopo»: un pezzo a sé
+    else if (d && x.m % +d === 0){ k = x.m / +d; dd = +d; }
+    else {
+      const cand = s0.gi > 1 ? [s0.gi - 1, s0.gi, s0.gi * s0.r] : [s0.r, s0.r - 1];
+      const buono = cand.find(n => n > 0 && x.m % n === 0 && (x.m / n) % 25 === 0);
+      if (buono){ k = buono; dd = x.m / buono; } else { k = 1; dd = x.m; }
+    }
+    // «3' tra le serie»: è la partenza del nuotato tra un giro e l'altro
+    const tra = testoTutto.match(/(\d{1,2})'\s*(?:(\d{1,2})"?\s*)?(?:di\s+rec\w*\s+)?(?:tra|fra)\s+(?:le\s+|i\s+)?(?:serie|giri)/i);
+    const p = s0.gi > 1 && k === s0.gi - 1 && tra ? (+tra[1]) + ":" + String(tra[2] || "0").padStart(2, "0") : "";
+    righe.push({b: "main", gi: 1, r: k, m: dd, s: "sl", z: x.z || "en1", a: [], p: p, n: x.n || "nuotato nei recuperi"});
+    metri += x.m;
+  });
+  return {righe: righe, metri: metri, avvisi: avvisi};
+}
+
+// una riga intera, o la riga di una tabella dei documenti («| Mar 3/11 | 5.300 | … | WU800+… |»)
+function leggiCompatta(rigaIn){
+  let t = rcPulisci(rigaIn), dich = null, dichZone = null;
+  if (!t || t[0] === "#" || /(^|\s)\/\//.test(t)) return null;
+  if (t[0] === "|"){
+    const celle = t.split("|").map(x => x.trim()).filter(Boolean);
+    const cand = celle.filter(x => x.indexOf("+") >= 0).sort((a, b) => b.length - a.length)[0];
+    if (!cand) return null;
+    const n = x => new RegExp("^" + RC_NUM + "$").test(x || "");
+    if (n(celle[1])) dich = rcNum(celle[1]);
+    // «Giorno | Metri | En-1 | TEC | En-2 | En-3 | Sp | Seduta»: le zone della riga sono un controllo in più
+    if ([2, 3, 4, 5, 6].every(i => n(celle[i]))) dichZone = {en1: rcNum(celle[2]), tec: rcNum(celle[3]), en2: rcNum(celle[4]), en3: rcNum(celle[5]), sp: rcNum(celle[6])};
+    t = cand;
+  }
+  const parti = rcParti(t);
+  const brevi = parti.filter(x => rcBreve(x)).length;
+  const conti = parti.some(x => /=\s*\d/.test(x) || /part\.\s*\d/i.test(x));
+  if (!(parti.length >= 2 && (brevi || conti)) && !(parti.length === 1 && conti && /×/.test(t))) return null;
+  const righe = [], avvisi = [], zone = {};
+  let metri = 0;
+  parti.forEach(x => {
+    const e = rcBreve(x) || rcSerie(x);
+    if (!e){ righe.push({testo: x, avvisi: ["questo pezzo non ha metri: lo lascio così, aggiungilo a mano se serve"]}); return; }
+    e.righe.forEach((y, i) => {
+      righe.push({testo: rcRiga(y), avvisi: i ? [] : e.avvisi});
+      zone[y.z] = (zone[y.z] || 0) + rcMetri(y);
+    });
+    metri += e.metri;
+  });
+  if (dich !== null && dich !== metri) avvisi.push("la riga del documento dice " + fmt(dich) + " m, le serie lette ne fanno " + fmt(metri));
+  else if (dichZone){
+    const diverse = Object.keys(dichZone).filter(k => (zone[k] || 0) !== dichZone[k]);
+    if (diverse.length) avvisi.push("zone diverse dalla riga del documento: " +
+      diverse.map(k => nomeZona(k) + " " + fmt(zone[k] || 0) + " invece di " + fmt(dichZone[k])).join(", "));
+  }
+  // la riga della tabella conferma le zone: gli avvisi sulla zona non scritta non servono più
+  if (dichZone && dich === metri && !avvisi.length)
+    righe.forEach(x => { if (x.avvisi) x.avvisi = x.avvisi.filter(a => a.indexOf("non scrive la zona") < 0); });
+  if (righe.length && avvisi.length) righe[0].avvisi = (righe[0].avvisi || []).concat(avvisi);
+  return {righe: righe, metri: metri, zone: zone};
+}
+
+// le righe del testo, con quelle compatte già scomposte
+function espandiCompatte(record){
+  const out = [];
+  record.forEach(rec => {
+    const c = !rec.celle && leggiCompatta(rec.testo);
+    if (!c){ out.push(rec); return; }
+    c.righe.forEach(x => out.push({testo: x.testo, celle: null, avvisi: x.avvisi || [], compatta: true}));
+  });
+  return out;
+}
+// il testo con le righe compatte riscritte una serie per riga, per correggerle a mano
+function testoEspanso(testo){
+  let cambiato = false;
+  const righe = String(testo == null ? "" : testo).replace(/\r\n?/g, "\n").split("\n").map(r => {
+    const c = r.indexOf("\t") < 0 && leggiCompatta(r);
+    if (!c) return r;
+    cambiato = true;
+    return c.righe.map(x => x.testo).join("\n");
+  });
+  return cambiato ? righe.join("\n") : null;
+}
+
+// la riga compatta si può riscrivere una serie per riga, per correggerla a mano prima di aggiungerla
+function disegnaCompatta(){
+  const box = document.getElementById("prevt-compatta");
+  if (box) box.hidden = testoEspanso(document.getElementById("testo").value) === null;
+}
+document.addEventListener("click", e => {
+  if (!e.target || e.target.id !== "testo-espandi") return;
+  const ta = document.getElementById("testo"), nuovo = testoEspanso(ta.value);
+  if (nuovo !== null){ ta.value = nuovo; anteprimaTesto(); ta.focus(); }
+});
 /* ============ gruppo: traguardi, appuntamenti, fasi, stato in vigore e andature ============ */
 const g_ui = {tutti: false, aperte: {}, filtri: {}};
 
