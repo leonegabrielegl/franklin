@@ -660,6 +660,32 @@ body{font-size:16px}
   .g-traguardi{display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:10px}
   .g-traguardi > *{margin:0}
 }
+
+/* ---------- la nota della serie in una finestra ---------- */
+#nota{cursor:text}
+.finestra-nota{width:min(640px, calc(100vw - 32px)); max-width:none; padding:0; border:1px solid var(--bordo); border-radius:var(--r-l);
+  background:var(--acqua); color:var(--piastrella); box-shadow:0 24px 64px rgba(0,0,0,.55)}
+.finestra-nota::backdrop{background:rgba(0,0,0,.62)}
+.fn-corpo{display:flex; flex-direction:column; gap:12px; padding:18px}
+.fn-testa{display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap}
+.fn-testa h2{font-size:20px}
+.fn-serie{font-family:var(--f-num); font-size:16px; color:var(--nebbia)}
+#fn-testo{width:100%; min-height:180px; resize:vertical; padding:12px 14px; border-radius:var(--r-m); border:1px solid var(--bordo);
+  background:var(--linea); color:var(--piastrella); font-family:var(--f-testo); font-size:16px; line-height:1.5}
+#fn-testo:focus{outline:none; border-color:var(--sabbia); box-shadow:0 0 0 3px var(--evid-anello)}
+.fn-piede{display:flex; justify-content:space-between; gap:10px; color:var(--tenue); font-size:13px; margin-top:-4px}
+.fn-azioni{display:flex; gap:8px; justify-content:flex-end}
+.fn-azioni .primario{flex:none; min-width:120px; min-height:44px}
+.fn-azioni .secondario{min-height:44px}
+#fn-svuota{margin-right:auto}
+@media (max-width:520px){
+  .finestra-nota{width:calc(100vw - 20px); margin:auto auto 10px; border-radius:var(--r-l)}
+  #fn-testo{min-height:140px}
+}
+@media (prefers-reduced-motion:no-preference){
+  .finestra-nota[open]{animation:fn-entra .16s ease-out}
+  @keyframes fn-entra{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none}}
+}
 </style>
 </head>
 <body>
@@ -3521,6 +3547,88 @@ function avviaSyncAuto(){
     setTimeout(() => { if (syncDaDisegnare && !staScrivendo()) ridisegnaSync(false); }, 300);
   });
 }
+
+/* ============ la nota della serie in una finestra più grande ============
+   Toccando il campo Nota del compositore si apre una finestra con un'area di testo ampia: si scrive comodi,
+   si vede tutto il testo, e «Fatto» lo rimette nel campo. La nota resta su una riga (la seduta copiata è una
+   serie per riga): gli a capo diventano spazi. Invio salva, Esc annulla; da tastiera il campo si usa come prima
+   e la finestra si apre anche con Invio o F2. */
+const NOTA_MAX = 600;
+function preparaFinestraNota(){
+  if (document.querySelector("#finestra-nota")) return;
+  const d = document.createElement("dialog");
+  d.id = "finestra-nota"; d.className = "finestra-nota";
+  d.setAttribute("aria-labelledby", "fn-titolo");
+  d.innerHTML =
+    '<form method="dialog" class="fn-corpo">' +
+      '<div class="fn-testa"><h2 id="fn-titolo">Nota della serie</h2><span class="fn-serie" id="fn-serie"></span></div>' +
+      '<textarea id="fn-testo" rows="7" maxlength="' + NOTA_MAX + '" spellcheck="true" aria-label="Testo della nota"></textarea>' +
+      '<div class="fn-piede"><small id="fn-aiuto">Invio per salvare · Esc per annullare</small><small class="fn-conta" id="fn-conta"></small></div>' +
+      '<div class="fn-azioni">' +
+        '<button type="button" class="secondario" id="fn-annulla">Annulla</button>' +
+        '<button type="button" class="secondario" id="fn-svuota">Svuota</button>' +
+        '<button type="submit" class="primario" id="fn-fatto" value="ok">Fatto</button>' +
+      '</div>' +
+    '</form>';
+  document.body.appendChild(d);
+  const ta = d.querySelector("#fn-testo"), conta = d.querySelector("#fn-conta");
+  const aggiorna = () => { conta.textContent = ta.value.length + " / " + NOTA_MAX; };
+  ta.addEventListener("input", () => {
+    const pulito = ta.value.replace(/\s*[\r\n]+\s*/g, " ");          // una riga sola, anche incollando
+    if (pulito !== ta.value){ const p = ta.selectionStart; ta.value = pulito; ta.selectionStart = ta.selectionEnd = Math.min(p, pulito.length); }
+    aggiorna();
+  });
+  ta.addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.isComposing){ e.preventDefault(); chiudiFinestraNota(true); }
+  });
+  d.querySelector("#fn-annulla").onclick = () => chiudiFinestraNota(false);
+  d.querySelector("#fn-svuota").onclick = () => { ta.value = ""; aggiorna(); ta.focus(); };
+  d.querySelector("form").addEventListener("submit", e => { e.preventDefault(); chiudiFinestraNota(true); });
+  d.addEventListener("cancel", e => { e.preventDefault(); chiudiFinestraNota(false); });    // Esc
+  // un tocco sul fondo scuro fuori dalla finestra annulla
+  d.addEventListener("click", e => { if (e.target === d && Date.now() - (d._aperta || 0) > 350) chiudiFinestraNota(false); });
+  d._aggiorna = aggiorna;
+}
+function apriFinestraNota(){
+  const campo = document.getElementById("nota"), d = document.querySelector("#finestra-nota");
+  if (!campo || !d || d.open) return;
+  const ta = d.querySelector("#fn-testo");
+  ta.value = campo.value;
+  let quale = "";
+  try { if (typeof bozza !== "undefined" && bozza && bozza.m) quale = descrizione(Object.assign({g: pref.gruppo}, bozza)); } catch (e) { quale = ""; }
+  d.querySelector("#fn-serie").textContent = quale;
+  d.querySelector("#fn-aiuto").hidden = matchMedia("(pointer:coarse)").matches;
+  d._aggiorna();
+  d._aperta = Date.now();
+  if (typeof d.showModal === "function") d.showModal(); else d.setAttribute("open", "");
+  ta.focus();
+  ta.selectionStart = ta.selectionEnd = ta.value.length;
+}
+function chiudiFinestraNota(salva){
+  const campo = document.getElementById("nota"), d = document.querySelector("#finestra-nota");
+  if (!d || !d.open) return;
+  if (salva){
+    campo.value = d.querySelector("#fn-testo").value.replace(/\s+/g, " ").trim();
+    campo.dispatchEvent(new Event("input", {bubbles: true}));
+  }
+  if (typeof d.close === "function") d.close(); else d.removeAttribute("open");
+  campo.focus({preventScroll: true});
+}
+(function(){
+  const campo = document.getElementById("nota");
+  if (!campo) return;
+  preparaFinestraNota();
+  campo.setAttribute("aria-haspopup", "dialog");
+  campo.title = "Tocca per scrivere la nota in una finestra più grande";
+  // col mouse o col dito il campo apre la finestra; da tastiera si scrive nel campo, Invio o F2 aprono la finestra
+  // col dito il campo non apre la tastiera da solo: la apre l'area di testo della finestra
+  if (matchMedia("(pointer:coarse)").matches) campo.readOnly = true;
+  campo.addEventListener("mousedown", e => { if (e.button === 0) e.preventDefault(); });
+  campo.addEventListener("click", () => apriFinestraNota());
+  campo.addEventListener("keydown", e => {
+    if ((e.key === "Enter" || e.key === "F2") && !e.isComposing){ e.preventDefault(); apriFinestraNota(); }
+  });
+})();
 
 /* ============ righe compatte dei documenti ============
    Nei documenti una seduta sta su una riga: «WU800+TEC600(drill …)+pre200+Sp-3 4×(4×25 …) part.1'30" … = 400 Sp + 300 En-1
