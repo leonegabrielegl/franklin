@@ -686,6 +686,58 @@ body{font-size:16px}
   .finestra-nota[open]{animation:fn-entra .16s ease-out}
   @keyframes fn-entra{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none}}
 }
+
+/* ---------- esercizio della serie ---------- */
+.chip.eserc{font-style:italic}
+.eserc-serie{font-style:italic; color:var(--piastrella)}
+.eserc-spostati{display:flex; align-items:center; justify-content:space-between; gap:10px; margin:8px 0 2px; padding:8px 12px;
+  border:1px dashed var(--evid-bordo); border-radius:var(--r-m); background:var(--evid-sfondo-2); font-size:14px; line-height:1.45; color:var(--nebbia)}
+.eserc-spostati .chip{flex:none}
+/* sul telefono i comandi della serie (✎ ↑ ↓ ✕, 44 px l'uno) vanno sotto: la serie si legge per intero */
+@media (max-width:520px){
+  .serie li{flex-wrap:wrap}
+  .serie li > .desc{flex:1 1 0; min-width:0}
+  .serie li > .comandi{flex:1 0 100%; display:flex; justify-content:flex-end; gap:2px; margin-top:-6px}
+}
+
+/* ---------- scheda Esercizi ---------- */
+#es-radice{max-width:980px}
+.es-testa{display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap; margin:12px 0 14px}
+.es-titolo h2{font-size:26px}
+.es-sotto{margin-top:4px; color:var(--nebbia); font-size:14px; max-width:560px}
+.es-strumenti{display:flex; gap:8px; flex-wrap:wrap}
+#es-cerca{min-width:220px; height:42px; padding:0 12px; border-radius:var(--r-m); border:1px solid var(--bordo); background:var(--linea);
+  color:var(--piastrella); font:inherit; font-size:16px}
+#es-cerca:focus{outline:none; border-color:var(--sabbia)}
+.es-riga-nuovo{display:flex; gap:8px; margin:0 0 14px}
+.es-riga-nuovo input{flex:1; min-width:0; height:44px; padding:0 12px; border-radius:var(--r-m); border:1px solid var(--bordo);
+  background:var(--linea); color:var(--piastrella); font:inherit; font-size:16px}
+.es-riga-nuovo .primario{flex:none; min-height:44px; padding:0 18px}
+.es-lista{display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 420px), 1fr)); gap:12px; align-items:start}
+.es-card{background:var(--acqua); border:1px solid var(--bordo); border-radius:var(--r-l); padding:14px 16px; display:flex; flex-direction:column; gap:10px}
+.es-card-testa{display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap}
+.es-card h3{font-family:var(--f-num); font-size:20px; font-weight:600; font-style:italic}
+.es-uso{font-size:13px; color:var(--tenue)}
+.es-testo{width:100%; min-height:76px; resize:vertical; padding:10px 12px; border-radius:var(--r-m); border:1px solid var(--bordo);
+  background:var(--linea); color:var(--piastrella); font-family:var(--f-testo); font-size:16px; line-height:1.5}
+.es-testo:focus{outline:none; border-color:var(--sabbia); box-shadow:0 0 0 3px var(--evid-anello)}
+.es-testo-letto{font-size:15px; line-height:1.55; color:var(--piastrella); white-space:pre-wrap}
+.es-testo-letto.vuoto{color:var(--tenue)}
+.es-proposta{display:flex; align-items:flex-start; justify-content:space-between; gap:10px; padding:8px 10px; border:1px dashed var(--evid-bordo);
+  border-radius:var(--r-m); background:var(--evid-sfondo-2); font-size:14px; line-height:1.45; color:var(--nebbia)}
+.es-proposta .chip{flex:none}
+.es-togli{align-self:flex-start; background:none; border:none; padding:4px 0; color:var(--tenue); font:inherit; font-size:13px; text-decoration:underline; cursor:pointer}
+.es-vuoto{color:var(--tenue)}
+.es-card.es-evidenza{animation:es-lampo 1.2s ease-out}
+@keyframes es-lampo{0%{box-shadow:0 0 0 3px var(--sabbia)} 100%{box-shadow:0 0 0 0 transparent}}
+.eserc-link{background:none; border:none; padding:0; margin:0; font:inherit; font-style:italic; color:inherit; cursor:pointer;
+  text-decoration:underline; text-decoration-color:var(--bordo); text-underline-offset:3px}
+.eserc-link:hover{text-decoration-color:var(--nebbia)}
+@media (max-width:520px){
+  .es-strumenti{width:100%} #es-cerca{flex:1; min-width:0}
+  .es-proposta{flex-direction:column}
+}
+@media (pointer:coarse){ #es-cerca{height:44px} }
 </style>
 </head>
 <body>
@@ -722,6 +774,9 @@ body{font-size:16px}
             <div class="chips" id="c-zona"></div>
             <div class="etichetta"><b>Blocco</b></div>
             <div class="chips" id="c-blocco"></div>
+            <div class="etichetta"><b>Esercizio</b> facoltativo, anche più di uno</div>
+            <div class="chips" id="c-eserc"></div>
+            <div class="eserc-spostati" id="eserc-spostati" hidden></div>
             <div class="etichetta"><b>Attrezzi</b> facoltativi</div>
             <div class="chips" id="c-attr"></div>
             <div class="riga-campi" style="margin-top:14px">
@@ -768,7 +823,7 @@ def 1x200 mx en1 // social"></textarea>
               <button class="chip piccolo" id="testo-espandi">Riscrivi in righe</button>
             </div>
             <ul class="serie lettura-testo" id="prevt-elenco" hidden></ul>
-            <p class="nota">Prima la struttura: blocco, ripetizioni×distanza, stile, zona, attrezzi e partenza (<code>p2:36</code>).
+            <p class="nota">Prima la struttura: blocco, ripetizioni×distanza, stile, zona, esercizio (<code>ex:catch-up</code>, o <code>ex:"pugno chiuso"</code> se sono più parole), attrezzi e partenza (<code>p2:36</code>).
               Tutto quello che scrivi dopo <code>//</code> è la nota e resta identico, virgole e numeri compresi.
               Senza <code>//</code> la nota comincia dalla prima parola che non riconosco.
               Puoi incollare anche una riga dei documenti (<code>WU800+TEC600(…)+pre200+Sp-3 4×(4×25) part.1'30" = 400 Sp + 300 En-1+…</code>)
@@ -921,6 +976,11 @@ def 1x200 mx en1 // social"></textarea>
   </section>
 
   <!-- ============ DATI ============ -->
+  <section class="vista" id="v-esercizi">
+    <div class="colonna" id="es-radice"></div>
+  </section>
+
+  <!-- ============ DATI ============ -->
   <section class="vista" id="v-dati">
     <div class="colonna">
       <div class="sez">
@@ -1026,6 +1086,8 @@ def 1x200 mx en1 // social"></textarea>
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M6.5 20v-6M10.5 20V8M14.5 20v-9M18.5 20V5"/></svg>Stagione</button>
     <button data-vista="v-gruppo" aria-pressed="false">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3.5 19c0-3.2 2.4-5.2 5.5-5.2s5.5 2 5.5 5.2"/><circle cx="17" cy="9.5" r="2.3"/><path d="M16.3 14.2c2.5.2 4.2 1.9 4.2 4.8"/></svg>Gruppo</button>
+    <button data-vista="v-esercizi" aria-pressed="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h9.5a2.5 2.5 0 0 1 2.5 2.5V20H8.5A2.5 2.5 0 0 1 6 17.5z"/><path d="M6 17.5A2.5 2.5 0 0 1 8.5 15H18M9.5 8.5h5M9.5 11.5h3.5"/></svg>Esercizi</button>
     <button data-vista="v-dati" aria-pressed="false">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>Dati</button>
   </div>
@@ -1048,7 +1110,9 @@ const GRUPPI = [
 const ZONE   = [["en1","En-1"],["tec","TEC"],["en2","En-2"],["en3","En-3"],["sp","Sp"]];
 const STILI  = [["sl","SL"],["do","DO"],["ra","RA"],["fa","FA"],["mx","MX"]];
 const BLOCCHI= [["wu","Risc"],["tec","Tec"],["pre","Pre"],["main","Serie"],["comp","Compl"],["def","Defat"]];
-const ATTREZZI = ["gambe","pull","palette","pinne","snorkel","paracadute","tavola","elastico","scull","drill","build","UDK"];
+const ATTREZZI = ["gambe","pull","palette","pinne","snorkel","paracadute","tavola","elastico"];
+// gli esercizi: una voce a sé, prima degli attrezzi (dal 13/11/2026; prima stavano tra gli attrezzi)
+const ESERCIZI = ["scull","drill","build","UDK"];
 const GIORNI = ["lun","mar","mer","gio","ven","sab","dom"];
 
 /* ============ salvataggio ============ */
@@ -1144,7 +1208,8 @@ const BASE = {
   stile: STILI.map(x => x[0]),
   zona:  ZONE.map(x => x[0]),
   blocco: BLOCCHI.map(x => x[0]),
-  attr:  ATTREZZI.slice()
+  attr:  ATTREZZI.slice(),
+  eserc: ESERCIZI.slice()
 };
 function voci(cat){
   const mie = (pref.voci && pref.voci[cat]) || [];
@@ -1153,6 +1218,7 @@ function voci(cat){
   if (cat === "zona")   dalDato = serie.map(s => s.z);
   if (cat === "blocco") dalDato = serie.map(s => s.b);
   if (cat === "attr")   dalDato = serie.reduce((a,s) => a.concat(s.a || []), []);
+  if (cat === "eserc")  dalDato = serie.reduce((a,s) => a.concat(s.e || []), []);
   const fuori = [];
   BASE[cat].concat(mie, dalDato).forEach(v => {
     if (v !== undefined && v !== null && v !== "" && fuori.indexOf(v) < 0) fuori.push(v);
@@ -1219,8 +1285,10 @@ const V_BLOCCO = {wu:"wu",risc:"wu",riscaldamento:"wu","warm-up":"wu",warmup:"wu
   comp:"comp",compl:"comp",complemento:"comp",def:"def",defat:"def",defaticamento:"def"};
 const V_ATTR = {};
 ATTREZZI.forEach(a => V_ATTR[a.toLowerCase()] = a);
-V_ATTR["sculling"] = "scull"; V_ATTR["scull"] = "scull"; V_ATTR["tubo"] = "tubo";
-V_ATTR["drag"] = "drag"; V_ATTR["ubk"] = "UDK"; V_ATTR["udk"] = "UDK";
+V_ATTR["tubo"] = "tubo"; V_ATTR["drag"] = "drag";
+const V_ESERC = {};
+ESERCIZI.forEach(a => V_ESERC[a.toLowerCase()] = a);
+V_ESERC["sculling"] = "scull"; V_ESERC["ubk"] = "UDK"; V_ESERC["udk"] = "UDK";
 // i codici di zona che valgono anche dentro la nota, se la zona non era stata scritta prima
 const CODICI_ZONA = ["en1","en-1","en2","en-2","en3","en-3","tec","sp"];
 
@@ -1242,7 +1310,8 @@ function vocabolario(base, cat){
   return v;
 }
 const vocabolari = () => ({s: vocabolario(V_STILE, "stile"), z: vocabolario(V_ZONA, "zona"),
-                           b: vocabolario(V_BLOCCO, "blocco"), a: vocabolario(V_ATTR, "attr")});
+                           b: vocabolario(V_BLOCCO, "blocco"), a: vocabolario(V_ATTR, "attr"),
+                           e: vocabolario(V_ESERC, "eserc")});
 
 // "2:36", "2'36"", "1.30", "2'", "45"", con o senza la p davanti -> "m:ss"; altrimenti null
 function partenzaDa(testo){
@@ -1319,11 +1388,18 @@ function leggiRigaEsito(rigaIn){
   };
   if (!dist) return soloTesto();
 
+  // gli esercizi scritti con ex: valgono dovunque prima della nota esplicita: si tolgono subito
+  const esercizi = [];
+  t = t.replace(/(^|\s)ex:(?:"([^"]+)"|(\S+))/gi, (tutto, sp, tra, una) => {
+    const nome = (tra || una || "").trim();
+    if (nome && esercizi.indexOf(nome) < 0) esercizi.push(nome);
+    return sp + " ".repeat(tutto.length - sp.length);
+  });
   const toks = [], re = /\S+/g;
   let m;
   while ((m = re.exec(t))) toks.push({raw: m[0], a: m.index, b: m.index + m[0].length, k: chiave(m[0]), i: toks.length});
 
-  const r = {gi: giri, r: rip, m: dist, s: "sl", z: "en1", b: "main", a: [], p: "", n: ""};
+  const r = {gi: giri, r: rip, m: dist, s: "sl", z: "en1", b: "main", a: [], e: esercizi.map(x => V.e[chiaveVoce(x)] !== undefined ? V.e[chiaveVoce(x)] : x), p: "", n: ""};
   let vS = false, vZ = false, vB = false, inNota = false, i = 0;
   const nota = [];
   const iniziaConBlocco = toks.length > 0 && V.b[toks[0].k] !== undefined;
@@ -1334,13 +1410,15 @@ function leggiRigaEsito(rigaIn){
     r.b = V.b[toks[0].k]; vB = true; i = 1;
   }
   const aggiungiAttrezzo = v => { if (r.a.indexOf(v) < 0) r.a.push(v); };
+  const aggiungiEsercizio = v => { if (r.e.indexOf(v) < 0) r.e.push(v); };
   while (i < toks.length){
     const x = toks[i], k = x.k;
     if (!inNota){
       let preso = 0;                            // prima le voci di più parole, dalla più lunga
       for (let n = Math.min(4, toks.length - i); n >= 2 && !preso; n--){
         const kk = toks.slice(i, i + n).map(y => y.k).join(" ");
-        if (V.a[kk] !== undefined){ aggiungiAttrezzo(V.a[kk]); preso = n; }
+        if (V.e[kk] !== undefined){ aggiungiEsercizio(V.e[kk]); preso = n; }
+        else if (V.a[kk] !== undefined){ aggiungiAttrezzo(V.a[kk]); preso = n; }
         else if (!vS && V.s[kk] !== undefined){ r.s = V.s[kk]; vS = true; preso = n; }
         else if (!vZ && V.z[kk] !== undefined){ r.z = V.z[kk]; vZ = true; preso = n; }
         else if (!vB && V.b[kk] !== undefined){ r.b = V.b[kk]; vB = true; preso = n; }
@@ -1355,6 +1433,7 @@ function leggiRigaEsito(rigaIn){
         i++; continue;
       }
       if (!vB && V.b[k] !== undefined){ r.b = V.b[k]; vB = true; i++; continue; }
+      if (V.e[k] !== undefined){ aggiungiEsercizio(V.e[k]); i++; continue; }
       if (V.a[k] !== undefined){ aggiungiAttrezzo(V.a[k]); i++; continue; }
       inNota = true;
     }
@@ -1365,7 +1444,7 @@ function leggiRigaEsito(rigaIn){
   }
   // una misura sola, senza moltiplicatore né altri indizi, non basta per essere una serie
   if (!moltiplicatore && !(iniziaConBlocco || vS || vZ || r.p || dist % 25 === 0)) return soloTesto();
-  if (r.a.indexOf("scull") >= 0 && !vZ) r.z = "tec";
+  if ((r.e.indexOf("scull") >= 0 || r.a.indexOf("scull") >= 0) && !vZ) r.z = "tec";
   if (r.z === "tec" && !vB) r.b = "tec";
 
   // la nota con gli spazi e la punteggiatura com'erano; dove è stato tolto qualcosa resta uno spazio
@@ -1412,7 +1491,7 @@ function leggiCelle(celleIn){
     return haParole(piene.join(" ")) ? {testo: piene.join(" ")} : {nonLetta: piene.join("  ")};
   }
 
-  const r = {gi: 1, r: 1, m: 0, s: "sl", z: "en1", b: "main", a: [], p: "", n: ""};
+  const r = {gi: 1, r: 1, m: 0, s: "sl", z: "en1", b: "main", a: [], e: [], p: "", n: ""};
   const avvisi = [];
   let j;
   const mm = celle[iNum].match(reMolt);
@@ -1514,7 +1593,7 @@ const leggiTesto = testo => analizzaTesto(testo).serie;
 function leggiRiga(riga){ const e = leggiRigaEsito(riga); return e.serie || null; }
 
 /* ============ stato del modulo ============ */
-const nuovaBozza = () => ({gi:1, r:1, m:0, s:"sl", z:"en1", b:"main", a:[]});
+const nuovaBozza = () => ({gi:1, r:1, m:0, s:"sl", z:"en1", b:"main", a:[], e:[]});
 let bozza = nuovaBozza();
 let inModifica = null;   // id della serie aperta in modifica, se ce n'è una
 let dataW = null;   // settimana in consultazione, indipendente dalla data della seduta
@@ -1610,6 +1689,16 @@ function disegnaForm(){
     {esempio:"Subacquee", titolo:"Aggiungi un blocco",
      su: v => { ricorda("blocco", v); bozza.b = v; rinfresca(); }});
 
+  if (!bozza.e) bozza.e = [];
+  chips(document.getElementById("c-eserc"),
+    voci("eserc").map(a => ({val:a, et:a})),
+    v => bozza.e.includes(v),
+    v => { const i = bozza.e.indexOf(v); i<0 ? bozza.e.push(v) : bozza.e.splice(i,1); rinfresca(); },
+    "piccolo eserc",
+    {esempio:"catch-up", titolo:"Aggiungi un esercizio",
+     su: v => { ricorda("eserc", v); if (!bozza.e.includes(v)) bozza.e.push(v); rinfresca(); }});
+  disegnaSpostati();
+
   chips(document.getElementById("c-attr"),
     voci("attr").map(a => ({val:a, et:a})),
     v => bozza.a.includes(v),
@@ -1629,6 +1718,7 @@ function descrizione(s){
 function dettaglio(s, senzaBlocco){
   const p = [];
   const b = BLOCCHI.find(x => x[0] === s.b); if (b && !senzaBlocco) p.push(b[1]);
+  if (s.e && s.e.length) p.push(s.e.join(" + "));
   if (s.a && s.a.length) p.push(s.a.join(" + "));
   if (s.p) p.push("part. " + s.p);
   if (s.n) p.push(s.n);
@@ -1649,7 +1739,7 @@ function anteprima(){
 
 function apriModifica(s){
   inModifica = s.id;
-  bozza = {gi:giriDi(s), r:s.r, m:s.m, s:s.s, z:s.z, b:s.b, a:(s.a || []).slice()};
+  bozza = {gi:giriDi(s), r:s.r, m:s.m, s:s.s, z:s.z, b:s.b, a:(s.a || []).slice(), e:(s.e || []).slice()};
   document.getElementById("nota").value = s.n || "";
   document.getElementById("partenza").value = s.p || "";
   document.getElementById("stato").value = s.f === 0 ? "0" : "1";
@@ -1671,6 +1761,7 @@ function salvaModifica(){
   if (!s) return chiudiModifica();
   s.gi = bozza.gi || 1; s.r = bozza.r; s.m = bozza.m; s.s = bozza.s; s.z = bozza.z; s.b = bozza.b;
   s.a = bozza.a.slice();
+  s.e = (bozza.e || []).slice();
   s.p = normPartenza(document.getElementById("partenza").value);
   s.n = document.getElementById("nota").value.trim();
   s.f = +document.getElementById("stato").value;
@@ -1808,6 +1899,7 @@ function disegnaTempi(){
 // il percorso inverso del parser: dalle serie registrate alla notazione testuale
 function serieARiga(s){
   const p = [s.b, (giriDi(s) > 1 ? giriDi(s) + "x" : "") + s.r + "x" + s.m, s.s, s.z];
+  (s.e || []).forEach(x => p.push(/[\s"]/.test(x) ? 'ex:"' + String(x).replace(/"/g, "") + '"' : "ex:" + x));
   (s.a || []).forEach(a => p.push(a));
   if (s.p) p.push("p" + normPartenza(s.p).replace(/\s+/g, ""));
   let riga = p.join(" ");
@@ -2724,12 +2816,12 @@ function scarica(nome, testo, tipo){
 const campoCSV = v => { const t = String(v == null ? "" : v);
   return /[;"\r\n]|^\s|\s$/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
 function esportaCSV(){
-  const testa = ["data","gruppo","blocco","giri","ripetizioni","distanza","metri","stile","zona","attrezzi","partenza","stato","note","variante"];
+  const testa = ["data","gruppo","blocco","giri","ripetizioni","distanza","metri","stile","zona","esercizio","attrezzi","partenza","stato","note","variante"];
   const righe = serie.slice()
     .sort((a,b) => a.d.localeCompare(b.d) || String(a.g).localeCompare(String(b.g)) || ((a.o||0) - (b.o||0)))
     .map(s => [
       s.d, baseGruppo(s.g), s.b, giriDi(s), s.r, s.m, metriDi(s), nomeStile(s.s), nomeZona(s.z),
-      (s.a||[]).join("+"), s.p||"", s.f===0?"programmato":"svolto", s.n||"", nomeVariante(s.g)
+      (s.e||[]).join("+"), (s.a||[]).join("+"), s.p||"", s.f===0?"programmato":"svolto", s.n||"", nomeVariante(s.g)
     ].map(campoCSV).join(";"));
   scarica("allenamenti-" + oggiISO() + ".csv", "\uFEFF" + testa.join(";") + "\n" + righe.join("\n"), "text/csv");
 }
@@ -2969,6 +3061,7 @@ function adottaConfig(c){
   });
   if (c.ritmi) pref.ritmi = c.ritmi;          // impostazioni: valgono quelle del PC
   if (c.slot) pref.slot = c.slot;
+  if (c.esercizi && typeof c.esercizi === "object" && !Array.isArray(c.esercizi)) pref.esercizi = c.esercizi;   // le spiegazioni: valgono quelle del PC
   pref.pianoTs = c.ts;
   salvaPref(); salvaPiano(); salvaGiorni(); salvaSchede(); ricostruisciModelli();
 }
@@ -2987,7 +3080,7 @@ async function sincronizza(silenzioso, auto){
         ? JSON.stringify({token: sync.token, sola: true, configTs: pref.pianoTs || 0})
         : JSON.stringify({token: sync.token, serie, eliminati,
             config: {ts: pref.pianoTs || 0, piano: piano, giorni: giorni, voci: pref.voci || {},
-                     ritmi: pref.ritmi || {}, slot: pref.slot || {}, schede: schede}})
+                     ritmi: pref.ritmi || {}, slot: pref.slot || {}, schede: schede, esercizi: pref.esercizi || {}}})
     });
     const d = await r.json();
     if (!d.ok) throw new Error(d.errore || "risposta non riconosciuta");
@@ -3039,6 +3132,19 @@ function dettaglioNodi(s, senzaBlocco){
   if (!senzaBlocco){ const b = BLOCCHI.find(x => x[0] === s.b); add(b ? b[1] : s.b); }
   if (s.p) add("p" + s.p, true);
   add(minuti(durataSerie(s)), true);
+  if (s.e && s.e.length){
+    const x = document.createElement("span"); x.className = "eserc-serie";
+    s.e.forEach((n, i) => {
+      if (i) x.appendChild(document.createTextNode(" + "));
+      const a = document.createElement("button");
+      a.type = "button"; a.className = "eserc-link"; a.textContent = n;
+      a.title = spiegazione(n) || "Apri la scheda dell'esercizio";
+      a.setAttribute("aria-label", "Spiegazione di " + n);
+      a.onclick = ev => { ev.stopPropagation(); apriEsercizio(n); };
+      x.appendChild(a);
+    });
+    d.appendChild(x);
+  }
   if (s.a && s.a.length) add(s.a.join(" + "));
   if (s.n){ const x = document.createElement("span"); x.className = "nota-serie"; x.textContent = s.n; d.appendChild(x); }
   if (s.f === 0) add("programmata");
@@ -4861,7 +4967,7 @@ function pdfDisegnaSeduta(D, lista, iso, gid, variante){
       stile: pdfStr(String(nomeStile(s.s)).toUpperCase()),
       zn: pdfStr(nomeZona(s.z)), zd: PDF_ZONE[s.z] ? pdfStr(PDF_ZONE[s.z]) : "",
       part: s.p ? pdfStr("p" + s.p) : "",
-      att: s.a && s.a.length ? pdfStr(s.a.join(" + ")) : "",
+      att: pdfStr([(s.e || []).join(" + "), (s.a || []).join(" + ")].filter(Boolean).join(" · ")),
       nota: s.n ? pdfStr(s.n) : "",
       m: pdfStr(fmt(metriDi(s))), t: pdfStr(minuti(durataSerie(s)))};
   });
@@ -5357,7 +5463,7 @@ function parteDalGruppo(){
   const origine = serie.filter(s => s.d === iso && s.g === g).sort(ordineSerie);
   if (!origine.length || serie.some(s => s.d === iso && s.g === gv)) return;
   const t = Date.now();
-  origine.forEach((s, k) => serie.push(Object.assign({}, s, {id: nuovoId(), g: gv, ts: t + k, a: (s.a || []).slice()})));
+  origine.forEach((s, k) => serie.push(Object.assign({}, s, {id: nuovoId(), g: gv, ts: t + k, a: (s.a || []).slice(), e: (s.e || []).slice()})));
   salvaSerie(); disegnaTutto();
 }
 
@@ -5640,10 +5746,249 @@ function disegnaVariantiSett(w, g){
     }
   }
 }
+/* ============ esercizi: fuori dagli attrezzi ============
+   Fino al 13/11/2026 gli esercizi (drill, scull, build, UDK, catch-up…) si scrivevano tra gli attrezzi.
+   Ora hanno una voce loro (s.e). Una volta sola, e poi a ogni arrivo dal foglio: quello che negli attrezzi
+   non è un attrezzo vero passa agli esercizi, nelle serie e nelle voci aggiunte a mano.
+   Sul dispositivo del titolare la serie spostata prende un ts nuovo, così il foglio riceve la versione nuova. */
+const ATTREZZO_VERO = /(^|[^a-zà-ÿ])(gambe|pull|pullbuoy|pull-buoy|palett|pinn|monopinna|snorkel|boccaglio|paracadute|tavol|elastic|tubo|drag|calze|socks|cintur|zavorr|pesi|tempo ?trainer|metronomo)/i;
+const eAttrezzoVero = v => ATTREZZO_VERO.test(String(v || ""));
+function spostaEsercizi(){
+  const titolare = !sync.sola && !(typeof sonoCollab === "function" && sonoCollab());
+  const nomi = [];
+  let n = 0;
+  const ts = Date.now();
+  serie.forEach((s, k) => {
+    if (!s.a || !s.a.length) return;
+    const via = s.a.filter(a => !eAttrezzoVero(a));
+    if (!via.length) return;
+    s.a = s.a.filter(a => eAttrezzoVero(a));
+    s.e = (s.e || []).slice();
+    via.forEach(v => { const nome = V_ESERC[String(v).toLowerCase()] || v; if (s.e.indexOf(nome) < 0) s.e.push(nome); if (nomi.indexOf(nome) < 0) nomi.push(nome); });
+    if (titolare) s.ts = Math.max((s.ts || 0) + 1, ts + k);
+    n++;
+  });
+  let voci = false;
+  if (pref.voci && pref.voci.attr && pref.voci.attr.some(a => !eAttrezzoVero(a))){
+    const via = pref.voci.attr.filter(a => !eAttrezzoVero(a));
+    pref.voci.attr = pref.voci.attr.filter(a => eAttrezzoVero(a));
+    pref.voci.eserc = (pref.voci.eserc || []);
+    via.forEach(v => { if (ESERCIZI.indexOf(v) < 0 && pref.voci.eserc.indexOf(v) < 0) pref.voci.eserc.push(v); if (nomi.indexOf(v) < 0) nomi.push(v); });
+    voci = true;
+  }
+  if (!n && !voci) return;
+  if (n) salvaSerie();
+  if (titolare){
+    if (voci) pref.pianoTs = Date.now();
+    const prima = pref.esercSpostati || {nomi: [], serie: 0};
+    nomi.forEach(x => { if (prima.nomi.indexOf(x) < 0) prima.nomi.push(x); });
+    prima.serie += n; prima.visto = false;
+    pref.esercSpostati = prima;
+  }
+  salvaPref();
+  if (typeof disegnaForm === "function" && typeof bozza !== "undefined" && bozza) disegnaForm(); else disegnaSpostati();
+}
+// il promemoria sotto i chip degli esercizi: cosa si è spostato, finché non si chiude
+function disegnaSpostati(){
+  const box = document.getElementById("eserc-spostati");
+  if (!box) return;
+  const x = pref.esercSpostati;
+  box.innerHTML = "";
+  if (!x || x.visto || !x.nomi.length){ box.hidden = true; return; }
+  const t = document.createElement("span");
+  t.textContent = "Spostati qui dagli attrezzi: " + x.nomi.join(", ") +
+    (x.serie ? " (" + x.serie + (x.serie === 1 ? " serie)." : " serie).") : ".");
+  const ok = document.createElement("button");
+  ok.className = "chip piccolo"; ok.textContent = "Ok"; ok.id = "eserc-spostati-ok";
+  ok.onclick = () => { pref.esercSpostati.visto = true; salvaPref(); disegnaSpostati(); };
+  box.append(t, ok);
+  box.hidden = false;
+}
+
+/* ============ scheda Esercizi: la spiegazione di ogni esercizio ============
+   Un elenco di tutti gli esercizi (quelli dei chip e quelli usati nelle serie), uno per uno: nome, quante volte
+   e quando è stato usato, e la spiegazione. Il titolare la scrive e la corregge qui; collaboratori e telefono
+   in sola lettura la leggono. Le spiegazioni viaggiano col foglio insieme alle impostazioni (config.esercizi).
+   Per gli esercizi più comuni c'è una proposta di spiegazione: si usa con un tocco, poi si corregge a piacere.
+   Toccando il nome di un esercizio in una serie si arriva qui, sulla sua scheda. */
+const PROPOSTE_ESERCIZI = [
+  [["scull", "sculling", "remata", "remate"], "Remate: le mani disegnano un 8 orizzontale per sentire la pressione dell'acqua, il braccio resta fermo dal gomito in su. Si fa in posizioni diverse: davanti alla testa, sotto il petto, ai fianchi."],
+  [["drill"], "Esercizio tecnico generico: scrivi qui quali drill usi di solito, oppure crea un esercizio per ogni drill."],
+  [["build", "progressivo"], "Progressivo dentro la ripetuta: si parte facile e si aumenta la velocità fino a chiudere forte."],
+  [["udk", "ubk", "subacquee"], "Gambe a delfino subacquee (underwater dolphin kick) in streamline, braccia distese sopra la testa: è la parte dopo partenza e virata."],
+  [["catch-up", "catchup", "a riprendere", "riprendere"], "Crawl a riprendere: una mano aspetta davanti finché l'altra non la raggiunge, poi parte. Allunga la bracciata e fa curare entrata e presa."],
+  [["pugno chiuso", "pugni chiusi", "pugno"], "Si nuota con i pugni chiusi: senza la mano l'atleta deve usare l'avambraccio per spingere l'acqua. Quando riapre le mani sente di più la presa."],
+  [["single arm", "single-arm", "un braccio", "braccio singolo"], "Un braccio solo, l'altro disteso avanti o lungo il fianco; nel crawl si respira dal lato del braccio che lavora. Isola la bracciata e la rotazione."],
+  [["6-1-6", "616", "6-3-6", "636"], "6 battute di gambe sul fianco, 1 (o 3) bracciate, 6 battute sull'altro fianco: lavora rotazione, equilibrio e coordinazione."],
+  [["zipper", "cerniera"], "Nel recupero il pollice risale lungo il fianco fino all'ascella, come chiudere una cerniera: gomito alto e mano rilassata."],
+  [["fingertip drag", "fingertip", "sfioramento", "sfiorare"], "Nel recupero la punta delle dita sfiora la superficie dell'acqua: gomito alto e spalla rilassata."],
+  [["side kick", "gambe sul fianco", "fianco"], "Gambe sul fianco, un braccio disteso avanti e l'altro lungo il corpo, viso in acqua; ci si gira per respirare. Allena posizione e rotazione."],
+  [["dog paddle", "cagnolino"], "Bracciata corta tutta sott'acqua, senza recupero aereo: allena la presa con il gomito alto davanti alla testa."],
+  [["tarzan", "testa alta", "polo"], "Crawl con la testa fuori dall'acqua che guarda avanti, come in pallanuoto: rinforza gambe e presa e alza il ritmo."],
+  [["stroke count", "conta bracciate", "bracciate contate"], "Si contano le bracciate per vasca e si cerca di tenerle uguali, o di farne una in meno, a parità di sforzo: misura l'efficienza."],
+  [["2 gambe 1 braccio", "2g1b", "due gambe un braccio"], "Rana con due gambate per ogni bracciata: allunga la scivolata e separa il tempo di gambe e braccia."],
+  [["3-3-3", "333"], "Farfalla 3-3-3: 3 bracciate col braccio destro, 3 col sinistro, 3 complete."],
+  [["streamline"], "Posizione idrodinamica: braccia distese sopra la testa, una mano sull'altra, bicipiti contro le orecchie, corpo allineato."]
+];
+const chiaveEsercizio = n => String(n || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "");
+function propostaEsercizio(nome){
+  const k = chiaveEsercizio(nome);
+  if (!k) return "";
+  const esatta = PROPOSTE_ESERCIZI.find(p => p[0].some(a => chiaveEsercizio(a) === k));
+  return esatta ? esatta[1] : "";
+}
+const spiegazione = nome => ((pref.esercizi || {})[nome] || {}).t || "";
+const puoScrivereEsercizi = () => !sync.sola && !sonoCollab();
+
+// tutti gli esercizi, con quante serie e l'ultima volta che compaiono
+function elencoEsercizi(){
+  const uso = {};
+  serie.forEach(s => (s.e || []).forEach(n => {
+    const u = uso[n] = uso[n] || {n: 0, ultima: "", g: ""};
+    u.n++;
+    if (s.d > u.ultima){ u.ultima = s.d; u.g = baseGruppo(s.g); }
+  }));
+  const nomi = voci("eserc").slice();
+  Object.keys(pref.esercizi || {}).forEach(n => { if (nomi.indexOf(n) < 0) nomi.push(n); });
+  return nomi.sort((a, b) => String(a).localeCompare(String(b), "it", {sensitivity: "base"}))
+    .map(n => ({nome: n, uso: uso[n] || {n: 0, ultima: "", g: ""}}));
+}
+
+function salvaSpiegazione(nome, testo){
+  pref.esercizi = pref.esercizi || {};
+  const t = String(testo || "").replace(/\s+$/g, "");
+  if (t) pref.esercizi[nome] = {t: t, ts: Date.now()};
+  else delete pref.esercizi[nome];
+  pref.pianoTs = Date.now();               // le spiegazioni partono col foglio alla prossima sincronizzazione
+  salvaPref();
+}
+
+function disegnaEsercizi(){
+  const radice = document.getElementById("es-radice");
+  if (!radice) return;
+  // mentre si scrive una spiegazione la scheda non si ridisegna (arriva comunque tutto alla prossima volta)
+  if (radice.contains(document.activeElement) && /TEXTAREA|INPUT/.test(document.activeElement.tagName)) return;
+  const filtro = (document.getElementById("es-cerca") || {}).value || "";
+  const scrivo = puoScrivereEsercizi();
+  radice.innerHTML = "";
+
+  const testa = el("div", "es-testa");
+  const tit = el("div", "es-titolo");
+  tit.append(el("h2", "", "Esercizi"),
+    el("p", "es-sotto", scrivo ? "La spiegazione di ogni esercizio che usi nelle serie. Scrivila qui: si salva da sola e arriva anche a telefono e collaboratori."
+                               : "La spiegazione di ogni esercizio usato nelle serie."));
+  testa.appendChild(tit);
+  const strumenti = el("div", "es-strumenti");
+  const cerca = document.createElement("input");
+  cerca.type = "search"; cerca.id = "es-cerca"; cerca.placeholder = "Cerca un esercizio"; cerca.value = filtro;
+  cerca.setAttribute("aria-label", "Cerca un esercizio");
+  cerca.oninput = () => filtraEsercizi();
+  strumenti.appendChild(cerca);
+  if (scrivo){
+    const nuovo = el("button", "secondario", "+ Nuovo esercizio"); nuovo.id = "es-nuovo";
+    nuovo.onclick = () => {
+      const riga = document.getElementById("es-riga-nuovo");
+      riga.hidden = false; riga.querySelector("input").focus();
+    };
+    strumenti.appendChild(nuovo);
+  }
+  testa.appendChild(strumenti);
+  radice.appendChild(testa);
+
+  if (scrivo){
+    const riga = el("div", "es-riga-nuovo"); riga.id = "es-riga-nuovo"; riga.hidden = true;
+    const campo = document.createElement("input"); campo.type = "text"; campo.maxLength = 40; campo.placeholder = "Nome dell'esercizio";
+    campo.setAttribute("aria-label", "Nome del nuovo esercizio");
+    const ok = el("button", "primario", "Aggiungi"), no = el("button", "secondario", "Annulla");
+    const conferma = () => {
+      const n = campo.value.trim().slice(0, 40);
+      if (!n) return;
+      if (!voci("eserc").some(x => chiaveEsercizio(x) === chiaveEsercizio(n))) ricorda("eserc", n);
+      pref.pianoTs = Date.now(); salvaPref();
+      campo.value = ""; riga.hidden = true; campo.blur();
+      disegnaForm(); disegnaEsercizi(); apriEsercizio(voci("eserc").find(x => chiaveEsercizio(x) === chiaveEsercizio(n)) || n, true);
+    };
+    ok.onclick = conferma; no.onclick = () => { campo.value = ""; riga.hidden = true; };
+    campo.onkeydown = e => { if (e.key === "Enter"){ e.preventDefault(); conferma(); } if (e.key === "Escape") no.onclick(); };
+    riga.append(campo, no, ok);
+    radice.appendChild(riga);
+  }
+
+  const lista = elencoEsercizi();
+  const ul = el("div", "es-lista"); ul.id = "es-lista";
+  if (!lista.length) ul.appendChild(el("p", "es-vuoto", "Nessun esercizio ancora."));
+  lista.forEach(x => {
+    const card = el("article", "es-card");
+    card.setAttribute("data-esercizio", x.nome);
+    card.id = "es-" + chiaveEsercizio(x.nome);
+    const h = el("div", "es-card-testa");
+    h.appendChild(el("h3", "", x.nome));
+    h.appendChild(el("span", "es-uso", x.uso.n
+      ? x.uso.n + (x.uso.n === 1 ? " serie" : " serie") + " · ultima " + giornoCorto(x.uso.ultima) + " " + ((GRUPPI.find(g => g.id === x.uso.g) || {}).nome || x.uso.g)
+      : "mai usato"));
+    card.appendChild(h);
+    const testo = spiegazione(x.nome), proposta = testo ? "" : propostaEsercizio(x.nome);
+    if (scrivo){
+      const ta = document.createElement("textarea");
+      ta.className = "es-testo"; ta.rows = 3; ta.maxLength = 1500; ta.value = testo;
+      ta.placeholder = "Come si esegue, a cosa serve, cosa guardare…";
+      ta.setAttribute("aria-label", "Spiegazione di " + x.nome);
+      let attesa = null;
+      const misura = () => { ta.style.height = "auto"; ta.style.height = Math.max(76, ta.scrollHeight + 2) + "px"; };
+      ta.oninput = () => { misura(); clearTimeout(attesa); attesa = setTimeout(() => salvaSpiegazione(x.nome, ta.value), 500); };
+      ta.onblur = () => { clearTimeout(attesa); salvaSpiegazione(x.nome, ta.value); };
+      card.appendChild(ta);
+      requestAnimationFrame(misura);
+      if (proposta){
+        const p = el("div", "es-proposta");
+        p.appendChild(el("span", "", "Proposta: " + proposta));
+        const usa = el("button", "chip piccolo", "Usa la proposta");
+        usa.onclick = () => { ta.value = proposta; salvaSpiegazione(x.nome, proposta); p.remove(); misura(); ta.focus(); };
+        p.appendChild(usa);
+        card.appendChild(p);
+      }
+      if (!x.uso.n && voci("eserc").indexOf(x.nome) >= 0 && ESERCIZI.indexOf(x.nome) < 0){
+        const via = el("button", "es-togli", "Togli questo esercizio");
+        via.onclick = () => {
+          if (!confirm("Tolgo «" + x.nome + "» dagli esercizi? Non è usato in nessuna serie.")) return;
+          scorda("eserc", x.nome);
+          if (pref.esercizi) delete pref.esercizi[x.nome];
+          pref.pianoTs = Date.now(); salvaPref();
+          disegnaForm(); disegnaEsercizi();
+        };
+        card.appendChild(via);
+      }
+    } else {
+      card.appendChild(el("p", testo ? "es-testo-letto" : "es-testo-letto vuoto", testo || "Nessuna spiegazione ancora."));
+    }
+    ul.appendChild(card);
+  });
+  radice.appendChild(ul);
+  filtraEsercizi();
+}
+function filtraEsercizi(){
+  const q = chiaveEsercizio((document.getElementById("es-cerca") || {}).value || "");
+  document.querySelectorAll("#es-lista .es-card").forEach(c => {
+    const nome = c.getAttribute("data-esercizio");
+    c.hidden = !!q && chiaveEsercizio(nome + " " + spiegazione(nome)).indexOf(q) < 0;
+  });
+}
+// dalla serie alla scheda dell'esercizio
+function apriEsercizio(nome, scrivi){
+  vaiA("v-esercizi");
+  const c = document.getElementById("es-" + chiaveEsercizio(nome));
+  if (!c) return;
+  c.hidden = false;
+  c.scrollIntoView({block: "center"});
+  c.classList.remove("es-evidenza"); void c.offsetWidth; c.classList.add("es-evidenza");
+  if (scrivi){ const ta = c.querySelector("textarea"); if (ta) ta.focus(); }
+}
+
 /* ============ navigazione e avvio ============ */
 function disegnaTutto(){
+  spostaEsercizi();
   disegnaGruppi();
-  disegnaSeduta(); disegnaSettimana(); disegnaStagione(); disegnaGruppo(); disegnaDati();
+  disegnaSeduta(); disegnaSettimana(); disegnaStagione(); disegnaGruppo(); disegnaEsercizi(); disegnaDati();
 }
 
 
@@ -5714,7 +6059,7 @@ function cambiaModo(form){
 
 document.getElementById("aggiungi").onclick = () => {
   if (inModifica) return salvaModifica();
-  aggiungiSerie([{gi:bozza.gi || 1, r:bozza.r, m:bozza.m, s:bozza.s, z:bozza.z, b:bozza.b, a:bozza.a.slice(),
+  aggiungiSerie([{gi:bozza.gi || 1, r:bozza.r, m:bozza.m, s:bozza.s, z:bozza.z, b:bozza.b, a:bozza.a.slice(), e:(bozza.e || []).slice(),
                   p: normPartenza(document.getElementById("partenza").value),
                   n: document.getElementById("nota").value.trim()}]);
   document.getElementById("nota").value = "";
