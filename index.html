@@ -738,6 +738,24 @@ body{font-size:16px}
   .es-proposta{flex-direction:column}
 }
 @media (pointer:coarse){ #es-cerca{height:44px} }
+
+/* ---------- gestire un esercizio ---------- */
+.es-card-destra{display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end}
+.es-gestisci{background:none; border:1px solid var(--bordo); border-radius:var(--r-m); padding:4px 10px; color:var(--nebbia);
+  font:inherit; font-size:13px; cursor:pointer; min-height:30px}
+.es-gestisci[aria-expanded="true"]{color:var(--piastrella); border-color:var(--nebbia)}
+@media (pointer:coarse){ .es-gestisci{min-height:44px; padding:4px 14px} }
+.es-gestione{display:flex; flex-direction:column; gap:8px; padding:12px; border-radius:var(--r-m); background:var(--linea); border:1px solid var(--bordo)}
+.es-gest-riga{display:flex; gap:8px; align-items:flex-end}
+.es-gest-campo{flex:1; min-width:0; display:flex; flex-direction:column; gap:4px; font-size:13px; color:var(--nebbia)}
+.es-gest-campo input{height:44px; padding:0 12px; border-radius:var(--r-m); border:1px solid var(--bordo); background:var(--acqua);
+  color:var(--piastrella); font:inherit; font-size:16px}
+.es-gest-riga .secondario{min-height:44px}
+.es-gest-aiuto{font-size:13px; color:var(--tenue); line-height:1.45}
+.es-elimina{align-self:flex-start; min-height:40px; padding:0 14px; border-radius:var(--r-m); border:1px solid var(--avviso-bordo, #6D3A40);
+  background:none; color:var(--gap); font:inherit; font-size:14px; cursor:pointer}
+.es-elimina:hover{background:var(--evid-sfondo-2)}
+@media (pointer:coarse){ .es-elimina{min-height:44px} }
 </style>
 </head>
 <body>
@@ -1224,6 +1242,7 @@ function voci(cat){
     if (v !== undefined && v !== null && v !== "" && fuori.indexOf(v) < 0) fuori.push(v);
   });
   if (cat === "rip" || cat === "dist" || cat === "giri") fuori.sort((a,b) => a - b);
+  if (cat === "eserc") return fuori.filter(v => !esercizioNascosto(v));
   return fuori;
 }
 function etichetta(cat, v){
@@ -1399,7 +1418,7 @@ function leggiRigaEsito(rigaIn){
   let m;
   while ((m = re.exec(t))) toks.push({raw: m[0], a: m.index, b: m.index + m[0].length, k: chiave(m[0]), i: toks.length});
 
-  const r = {gi: giri, r: rip, m: dist, s: "sl", z: "en1", b: "main", a: [], e: esercizi.map(x => V.e[chiaveVoce(x)] !== undefined ? V.e[chiaveVoce(x)] : x), p: "", n: ""};
+  const r = {gi: giri, r: rip, m: dist, s: "sl", z: "en1", b: "main", a: [], e: esercizi.map(x => nomeAttuale(V.e[chiaveVoce(x)] !== undefined ? V.e[chiaveVoce(x)] : x)), p: "", n: ""};
   let vS = false, vZ = false, vB = false, inNota = false, i = 0;
   const nota = [];
   const iniziaConBlocco = toks.length > 0 && V.b[toks[0].k] !== undefined;
@@ -1457,6 +1476,7 @@ function leggiRigaEsito(rigaIn){
     testoNota += x.raw;
   });
   r.n = [testoNota, notaEsplicita].filter(Boolean).join(" ");
+  trovaEsercizi(r.n).forEach(aggiungiEsercizio);               // gli esercizi nominati nella nota
 
   const avvisi = [];
   if (!vZ){
@@ -1533,6 +1553,7 @@ function leggiCelle(celleIn){
   if (iP >= 0){ r.p = partenzaDa(resto[iP]); usate[iP] = true; }
   // tutto il resto è nota: le celle così come sono, in ordine
   r.n = prima.slice(1).concat(resto.filter((x, i) => !usate[i])).join(" ");
+  trovaEsercizi(r.n).forEach(n => { if (r.e.indexOf(n) < 0) r.e.push(n); });   // anche la colonna «esercizio» del CSV
   return {serie: r, avvisi: avvisi};
 }
 
@@ -1696,7 +1717,7 @@ function disegnaForm(){
     v => { const i = bozza.e.indexOf(v); i<0 ? bozza.e.push(v) : bozza.e.splice(i,1); rinfresca(); },
     "piccolo eserc",
     {esempio:"catch-up", titolo:"Aggiungi un esercizio",
-     su: v => { ricorda("eserc", v); if (!bozza.e.includes(v)) bozza.e.push(v); rinfresca(); }});
+     su: v => { mostraEsercizio(v); ricorda("eserc", v); if (!bozza.e.includes(v)) bozza.e.push(v); rinfresca(); }});
   disegnaSpostati();
 
   chips(document.getElementById("c-attr"),
@@ -3056,6 +3077,7 @@ function adottaConfig(c){
   const v = c.voci || {};
   pref.voci = pref.voci || {};
   Object.keys(v).forEach(cat => {
+    if (cat === "esercNascosti" || cat === "esercAlias"){ pref.voci[cat] = (v[cat] || []).slice(); return; }
     pref.voci[cat] = pref.voci[cat] || [];
     (v[cat] || []).forEach(x => { if (pref.voci[cat].indexOf(x) < 0) pref.voci[cat].push(x); });
   });
@@ -4036,7 +4058,7 @@ function testoEspanso(testo){
     const c = r.indexOf("\t") < 0 && leggiCompatta(r);
     if (!c) return r;
     cambiato = true;
-    return c.righe.map(x => x.testo).join("\n");
+    return c.righe.map(x => { const e = leggiRigaEsito(x.testo); return e.serie ? serieARiga(e.serie) : x.testo; }).join("\n");
   });
   return cambiato ? righe.join("\n") : null;
 }
@@ -5849,7 +5871,7 @@ function elencoEsercizi(){
     if (s.d > u.ultima){ u.ultima = s.d; u.g = baseGruppo(s.g); }
   }));
   const nomi = voci("eserc").slice();
-  Object.keys(pref.esercizi || {}).forEach(n => { if (nomi.indexOf(n) < 0) nomi.push(n); });
+  Object.keys(pref.esercizi || {}).forEach(n => { if (nomi.indexOf(n) < 0 && !esercizioNascosto(n)) nomi.push(n); });
   return nomi.sort((a, b) => String(a).localeCompare(String(b), "it", {sensitivity: "base"}))
     .map(n => ({nome: n, uso: uso[n] || {n: 0, ultima: "", g: ""}}));
 }
@@ -5903,6 +5925,7 @@ function disegnaEsercizi(){
     const conferma = () => {
       const n = campo.value.trim().slice(0, 40);
       if (!n) return;
+      mostraEsercizio(n);
       if (!voci("eserc").some(x => chiaveEsercizio(x) === chiaveEsercizio(n))) ricorda("eserc", n);
       pref.pianoTs = Date.now(); salvaPref();
       campo.value = ""; riga.hidden = true; campo.blur();
@@ -5923,9 +5946,11 @@ function disegnaEsercizi(){
     card.id = "es-" + chiaveEsercizio(x.nome);
     const h = el("div", "es-card-testa");
     h.appendChild(el("h3", "", x.nome));
-    h.appendChild(el("span", "es-uso", x.uso.n
+    const destra = el("div", "es-card-destra");
+    destra.appendChild(el("span", "es-uso", x.uso.n
       ? x.uso.n + (x.uso.n === 1 ? " serie" : " serie") + " · ultima " + giornoCorto(x.uso.ultima) + " " + ((GRUPPI.find(g => g.id === x.uso.g) || {}).nome || x.uso.g)
       : "mai usato"));
+    h.appendChild(destra);
     card.appendChild(h);
     const testo = spiegazione(x.nome), proposta = testo ? "" : propostaEsercizio(x.nome);
     if (scrivo){
@@ -5947,17 +5972,13 @@ function disegnaEsercizi(){
         p.appendChild(usa);
         card.appendChild(p);
       }
-      if (!x.uso.n && voci("eserc").indexOf(x.nome) >= 0 && ESERCIZI.indexOf(x.nome) < 0){
-        const via = el("button", "es-togli", "Togli questo esercizio");
-        via.onclick = () => {
-          if (!confirm("Tolgo «" + x.nome + "» dagli esercizi? Non è usato in nessuna serie.")) return;
-          scorda("eserc", x.nome);
-          if (pref.esercizi) delete pref.esercizi[x.nome];
-          pref.pianoTs = Date.now(); salvaPref();
-          disegnaForm(); disegnaEsercizi();
-        };
-        card.appendChild(via);
-      }
+      const gest = pannelloGestione(x.nome);
+      const apri = el("button", "es-gestisci", "Gestisci");
+      apri.setAttribute("aria-expanded", "false");
+      apri.onclick = () => { gest.hidden = !gest.hidden; apri.setAttribute("aria-expanded", gest.hidden ? "false" : "true");
+        if (!gest.hidden) gest.querySelector("input").focus(); };
+      destra.appendChild(apri);
+      card.appendChild(gest);
     } else {
       card.appendChild(el("p", testo ? "es-testo-letto" : "es-testo-letto vuoto", testo || "Nessuna spiegazione ancora."));
     }
@@ -5982,6 +6003,189 @@ function apriEsercizio(nome, scrivi){
   c.scrollIntoView({block: "center"});
   c.classList.remove("es-evidenza"); void c.offsetWidth; c.classList.add("es-evidenza");
   if (scrivi){ const ta = c.querySelector("textarea"); if (ta) ta.focus(); }
+}
+
+/* ============ gli esercizi riconosciuti dentro il testo ============
+   In ogni modo di scrivere una serie (riga normale anche nella nota, riga compatta dei documenti, celle copiate
+   da Excel o dal CSV) un esercizio si riconosce dal nome: quelli dei chip, quelli già usati e i nomi delle
+   proposte (catch-up, single-arm, pugno chiuso, zipper…). Il testo della nota resta com'era; l'esercizio va in più
+   nella sua voce. Non vale se è negato: «senza catch-up», «niente drill», «no UDK». */
+// nomi delle proposte troppo generici per riconoscerli dentro una frase
+const NON_IN_FRASE = new Set(["fianco", "pugno", "polo", "remata", "remate", "riprendere", "progressivo", "subacquee", "streamline", "sfiorare", "a riprendere"].map(x => chiaveEsercizio(x)));
+function cercatoriEsercizi(){
+  const out = [], visti = new Set();
+  const aggiungi = (alias, nome) => {
+    const k = chiaveEsercizio(alias);
+    if (!k || k.length < 3 || NON_IN_FRASE.has(k) || visti.has(k)) return;
+    visti.add(k);
+    // spazi e trattini sono intercambiabili: «single arm», «single-arm», «singlearm»
+    const pezzi = String(alias).trim().split(/[\s-]+/).map(p => p.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+    out.push({re: new RegExp("(^|[^a-zà-ÿ0-9])(" + pezzi.join("[\\s-]?") + ")(?![a-zà-ÿ0-9])", "gi"), nome: nome});
+  };
+  esercAlias().forEach(p => { const n = nomeAttuale(p[1]); if (!esercizioNascosto(n)) aggiungi(p[0], n); });
+  const nascosti = new Set(esercNascosti().map(kEs));
+  const mie = voci("eserc");
+  mie.forEach(n => aggiungi(n, n));
+  PROPOSTE_ESERCIZI.forEach(([alias]) => {
+    // il nome è quello dei miei chip se ne ho uno della stessa famiglia, altrimenti il primo della proposta
+    const mio = mie.find(n => alias.some(a => chiaveEsercizio(a) === chiaveEsercizio(n)));
+    const nome = nomeAttuale(mio || ESERCIZI.find(n => chiaveEsercizio(n) === chiaveEsercizio(alias[0])) || alias[0]);
+    if (esercizioNascosto(nome) || alias.some(a => nascosti.has(kEs(a)))) return;   // eliminato: non si riconosce più
+    alias.forEach(a => aggiungi(a, nome));
+  });
+  return out.sort((a, b) => b.re.source.length - a.re.source.length);   // prima i nomi più lunghi
+}
+function trovaEsercizi(testo){
+  const t = String(testo || "");
+  if (!t.trim()) return [];
+  const presi = [], occupato = [];
+  cercatoriEsercizi().forEach(c => {
+    c.re.lastIndex = 0;
+    let m;
+    while ((m = c.re.exec(t))){
+      const a = m.index + m[1].length, b = a + m[2].length;
+      if (occupato.some(([x, y]) => a < y && b > x)) continue;            // dentro un nome più lungo già preso
+      const prima = t.slice(Math.max(0, a - 14), a).toLowerCase();
+      if (/(^|[^a-zà-ÿ])(senza|niente|no|non)\s+$/.test(prima)) continue;
+      occupato.push([a, b]);
+      presi.push({a: a, nome: c.nome});
+    }
+  });
+  const nomi = [];
+  presi.sort((x, y) => x.a - y.a).forEach(x => { if (nomi.indexOf(x.nome) < 0) nomi.push(x.nome); });
+  return nomi;
+}
+
+/* ============ gestire gli esercizi: rinomina, unisci, elimina ============
+   Dalla scheda Esercizi il titolare può rinominare un esercizio (se il nome nuovo è quello di un altro, i due si
+   uniscono) o eliminarlo, anche se è di partenza o usato nelle serie. Le due liste che lo ricordano viaggiano col
+   foglio insieme alle altre voci, senza toccare il foglio:
+   - voci.esercNascosti: gli esercizi eliminati — spariscono da chip e schede e non si riconoscono più nel testo;
+   - voci.esercAlias («vecchio=>nuovo»): i nomi rinominati — nel testo il nome vecchio diventa quello nuovo. */
+function kEs(n){ return String(n || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, ""); }
+function esercNascosti(){ return (pref.voci && pref.voci.esercNascosti) || []; }
+function esercAlias(){
+  return ((pref.voci && pref.voci.esercAlias) || []).map(x => String(x).split("=>")).filter(p => p.length === 2 && p[0] && p[1]);
+}
+function esercizioNascosto(n){
+  const k = kEs(n);
+  return esercNascosti().some(x => kEs(x) === k) || esercAlias().some(p => kEs(p[0]) === k);
+}
+// il nome di oggi di un esercizio, seguendo i rinomina
+function nomeAttuale(n){
+  let nome = n;
+  for (let giro = 0; giro < 10; giro++){
+    const p = esercAlias().find(q => kEs(q[0]) === kEs(nome));
+    if (!p) break;
+    nome = p[1];
+  }
+  return nome;
+}
+// un esercizio scritto o aggiunto a mano torna visibile, anche se era stato eliminato
+function mostraEsercizio(n){
+  if (!pref.voci) return;
+  const k = kEs(n);
+  if (pref.voci.esercNascosti) pref.voci.esercNascosti = pref.voci.esercNascosti.filter(x => kEs(x) !== k);
+  if (pref.voci.esercAlias) pref.voci.esercAlias = pref.voci.esercAlias.filter(x => kEs(String(x).split("=>")[0]) !== k);
+}
+function usoEsercizio(nome){ const k = kEs(nome); return serie.filter(s => (s.e || []).some(x => kEs(x) === k)).length; }
+
+function eliminaEsercizio(nome){
+  const k = kEs(nome), ts = Date.now();
+  let n = 0;
+  serie.forEach((s, i) => {
+    if (!(s.e || []).some(x => kEs(x) === k)) return;
+    s.e = s.e.filter(x => kEs(x) !== k);
+    s.ts = Math.max((s.ts || 0) + 1, ts + i); n++;
+  });
+  pref.voci = pref.voci || {};
+  pref.voci.eserc = (pref.voci.eserc || []).filter(x => kEs(x) !== k);
+  // i nomi vecchi che portavano a questo spariscono con lui
+  const vecchi = esercAlias().filter(p => kEs(p[1]) === k).map(p => p[0]);
+  pref.voci.esercAlias = (pref.voci.esercAlias || []).filter(x => kEs(String(x).split("=>")[1]) !== k);
+  pref.voci.esercNascosti = esercNascosti().filter(x => kEs(x) !== k).concat([nome], vecchi);
+  if (pref.esercizi) Object.keys(pref.esercizi).forEach(x => { if (kEs(x) === k) delete pref.esercizi[x]; });
+  if (typeof bozza !== "undefined" && bozza && bozza.e) bozza.e = bozza.e.filter(x => kEs(x) !== k);
+  pref.pianoTs = Date.now(); salvaPref();
+  if (n) salvaSerie();
+  return n;
+}
+
+// rinomina; se il nome nuovo è quello di un altro esercizio, i due diventano uno solo. Ritorna il nome finale
+function rinominaEsercizio(vecchio, nuovoIn){
+  const nuovo = String(nuovoIn || "").replace(/["=]/g, "").replace(/\s+/g, " ").trim().slice(0, 40);
+  const kv = kEs(vecchio), kn = kEs(nuovo);
+  if (!kn || nuovo === vecchio) return vecchio;
+  const altro = kn !== kv ? voci("eserc").find(x => kEs(x) === kn) : null;
+  const finale = altro || nuovo, ts = Date.now();
+  serie.forEach((s, i) => {
+    if (!(s.e || []).some(x => kEs(x) === kv)) return;
+    const e = [];
+    s.e.forEach(x => { const y = kEs(x) === kv ? finale : x; if (!e.some(z => kEs(z) === kEs(y))) e.push(y); });
+    s.e = e; s.ts = Math.max((s.ts || 0) + 1, ts + i);
+  });
+  pref.voci = pref.voci || {};
+  pref.voci.eserc = (pref.voci.eserc || []).filter(x => kEs(x) !== kv && kEs(x) !== kEs(finale));
+  if (BASE.eserc.indexOf(finale) < 0) pref.voci.eserc.push(finale);
+  mostraEsercizio(finale);
+  if (kn !== kv){
+    // il nome vecchio, e quelli che portavano a lui, d'ora in poi portano al nuovo
+    pref.voci.esercAlias = (pref.voci.esercAlias || [])
+      .map(x => { const p = String(x).split("=>"); return p.length === 2 && kEs(p[1]) === kv ? p[0] + "=>" + finale : x; })
+      .filter(x => kEs(String(x).split("=>")[0]) !== kv);
+    pref.voci.esercAlias.push(vecchio + "=>" + finale);
+  }
+  pref.esercizi = pref.esercizi || {};
+  const sp = Object.keys(pref.esercizi).find(x => kEs(x) === kv);
+  if (sp !== undefined){
+    if (!pref.esercizi[finale] || kn === kv) pref.esercizi[finale] = pref.esercizi[sp];
+    if (sp !== finale) delete pref.esercizi[sp];
+  }
+  if (typeof bozza !== "undefined" && bozza && bozza.e){
+    const e = []; bozza.e.forEach(x => { const y = kEs(x) === kv ? finale : x; if (e.indexOf(y) < 0) e.push(y); }); bozza.e = e;
+  }
+  pref.pianoTs = Date.now(); salvaPref(); salvaSerie();
+  return finale;
+}
+
+// il pannello «Gestisci» di una scheda
+function pannelloGestione(nome){
+  const box = el("div", "es-gestione"); box.hidden = true;
+  const riga = el("div", "es-gest-riga");
+  const lab = el("label", "es-gest-campo", "Nome");
+  const campo = document.createElement("input");
+  campo.type = "text"; campo.maxLength = 40; campo.value = nome;
+  campo.setAttribute("aria-label", "Nuovo nome di " + nome);
+  lab.appendChild(campo);
+  const rin = el("button", "secondario", "Rinomina");
+  const fai = () => {
+    const nuovo = campo.value.trim();
+    if (!nuovo || nuovo === nome) return;
+    const altro = kEs(nuovo) !== kEs(nome) ? voci("eserc").find(x => kEs(x) === kEs(nuovo)) : null;
+    const n = usoEsercizio(nome);
+    if (altro && !confirm("Esiste già «" + altro + "». Unisco «" + nome + "» con «" + altro + "»?" +
+        (n ? " Le " + n + " serie con «" + nome + "» passano a «" + altro + "»." : "") +
+        (spiegazione(altro) ? " Resta la spiegazione di «" + altro + "»." : ""))) return;
+    campo.blur();
+    const finale = rinominaEsercizio(nome, nuovo);
+    disegnaForm(); disegnaTutto(); apriEsercizio(finale);
+  };
+  rin.onclick = fai;
+  campo.onkeydown = e => { if (e.key === "Enter"){ e.preventDefault(); fai(); } };
+  riga.append(lab, rin);
+  box.appendChild(riga);
+  box.appendChild(el("p", "es-gest-aiuto", "Se scrivi il nome di un altro esercizio, i due diventano uno solo. Nel testo il nome vecchio sarà letto come quello nuovo."));
+  const via = el("button", "es-elimina", "Elimina esercizio");
+  via.onclick = () => {
+    const n = usoEsercizio(nome);
+    if (!confirm("Elimino «" + nome + "»? Sparisce dai chip e da questa scheda" +
+        (n ? ", e da " + n + (n === 1 ? " serie" : " serie") + " (le note restano come sono)" : "") +
+        ". Non verrà più riconosciuto nel testo; se lo riscrivi a mano, torna.")) return;
+    eliminaEsercizio(nome);
+    disegnaForm(); disegnaTutto();
+  };
+  box.appendChild(via);
+  return box;
 }
 
 /* ============ navigazione e avvio ============ */
